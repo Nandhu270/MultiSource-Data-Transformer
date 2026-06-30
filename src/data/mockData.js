@@ -306,6 +306,8 @@ export const configPresets = {
         { path: "education", type: "object[]", required: false },
         { path: "provenance", type: "object[]", required: true },
         { path: "overall_confidence", type: "number", required: true },
+        { path: "github_profile", type: "object", required: false },
+        { path: "github_repos", type: "object[]", required: false },
       ],
       include_confidence: true,
       on_missing: "null"

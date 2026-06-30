@@ -57,9 +57,59 @@ export default function UploadSources() {
     }
   };
 
-  const handleRunPipeline = () => {
-    runPipeline();
-    setTimeout(() => navigate('/results'), 3500);
+  const handleRunPipeline = async () => {
+    dispatch({ type: 'START_PIPELINE' });
+    const startTime = Date.now();
+
+    try {
+      const formData = new FormData();
+      
+      if (sources.recruiterCsv.file) {
+        formData.append('recruiter_csv', sources.recruiterCsv.file);
+      }
+      if (sources.githubCsv.file) {
+        formData.append('github_csv', sources.githubCsv.file);
+      }
+      
+      sources.resumeFolder.files.forEach(file => {
+        formData.append('resumes', file);
+      });
+
+      formData.append('config_json', JSON.stringify(state.customConfig));
+
+      const response = await fetch('http://localhost:8000/api/run_pipeline', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        let errMsg = 'Failed to run pipeline';
+        try {
+          const errData = JSON.parse(errText);
+          errMsg = errData.detail || errMsg;
+        } catch(e) {}
+        throw new Error(errMsg);
+      }
+
+      const result = await response.json();
+      const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+
+      dispatch({
+        type: 'COMPLETE_PIPELINE_LIVE',
+        payload: {
+          candidates: result.candidates,
+          completeCandidates: result.complete_candidates,
+          conflicts: result.conflicts,
+          duration
+        }
+      });
+
+      navigate('/results');
+    } catch (err) {
+      dispatch({ type: 'RESET_PIPELINE' });
+      alert(`Error running pipeline: ${err.message}`);
+    }
   };
 
   const sources = state.sources;
@@ -189,19 +239,7 @@ export default function UploadSources() {
 
       </div>
 
-      {/* Pipeline execution status */}
-      {state.pipeline.status === 'running' && (
-        <motion.div className="glass-card" style={{ padding: 'var(--space-6)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
-            <Loader2 size={20} color="var(--accent-violet)" style={{ animation: 'spin 1s linear infinite' }} />
-            <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>Pipeline Running...</h2>
-            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--accent-violet)', fontFamily: 'var(--font-mono)', marginLeft: 'auto' }}>
-              Stage {Math.min(state.pipeline.currentStage + 1, 7)} / 7
-            </span>
-          </div>
-          <PipelineStages stages={pipelineStages} currentStage={state.pipeline.currentStage} status={state.pipeline.status} />
-        </motion.div>
-      )}
+
 
       {/* Execution panel */}
       <motion.div style={{

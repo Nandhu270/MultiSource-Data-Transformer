@@ -1,0 +1,13 @@
+fastapi==0.110.0
+uvicorn==0.28.0
+pandas==2.2.1
+pdfplumber==0.11.0
+python-docx==1.1.0
+phonenumbers==8.13.32
+python-dateutil==2.9.0
+rapidfuzz==3.6.2
+pydantic==2.6.4
+requests==2.31.0
+python-multipart==0.0.9
+python-dotenv==1.0.1
+pytest==8.0.2

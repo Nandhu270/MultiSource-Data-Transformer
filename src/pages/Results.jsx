@@ -5,7 +5,8 @@ import {
   User, Mail, Phone, Building2, Briefcase, MapPin,
   Code2, Award, Info, Download, ExternalLink,
   Link2, GraduationCap, Calendar, Clock, Globe,
-  Shield, Hash, CheckCircle2, ChevronRight, Check
+  Shield, Hash, CheckCircle2, ChevronRight, Check,
+  Play, Upload
 } from 'lucide-react';
 import GithubIcon from '../components/icons/GithubIcon';
 import { usePipeline } from '../context/PipelineContext';
@@ -21,11 +22,11 @@ export default function Results() {
   const { state, dispatch } = usePipeline();
 
   // Multi-candidate setup
-  const candidates = state.results.candidates.length > 0 ? state.results.candidates : mockCandidates;
-  const selectedCandidate = state.results.selectedCandidate || candidates[0];
-  const conflicts = state.results.conflicts.length > 0 ? state.results.conflicts : mockConflicts;
-  const outputJSON = state.results.outputJSON || mockOutputJSON;
   const hasResults = state.pipeline.status === 'completed';
+  const candidates = hasResults ? state.results.candidates : [];
+  const selectedCandidate = state.results.selectedCandidate || candidates[0];
+  const conflicts = hasResults ? state.results.conflicts : [];
+  const outputJSON = hasResults ? state.results.outputJSON : null;
 
   // Safe unwrap utility for wrapped object values (when include_confidence is active)
   const unwrap = (val) => {
@@ -42,8 +43,20 @@ export default function Results() {
     return typeof raw === 'object' && raw !== null && 'value' in raw ? raw.value : raw;
   };
 
+  // Safe location formatter to avoid double commas or empty parts
+  const getFormattedLocation = (locObj) => {
+    const loc = unwrap(locObj);
+    if (!loc) return 'No location mentioned';
+    const parts = [
+      unwrap(loc.city),
+      unwrap(loc.region),
+      unwrap(loc.country)
+    ].map(p => p ? String(p).strip ? String(p).trim() : p : '').filter(p => p && p.toLowerCase() !== 'nan');
+    return parts.join(', ') || 'No location mentioned';
+  };
+
   // Resolve complete profile details matching selected candidate ID
-  const completeCandidate = mockCandidates.find(
+  const completeCandidate = (state.results.completeCandidates || []).find(
     c => getCid(c) === getCid(selectedCandidate)
   ) || selectedCandidate;
 
@@ -58,6 +71,88 @@ export default function Results() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
+
+  if (!hasResults) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 'var(--space-12) var(--space-6)',
+        textAlign: 'center',
+        minHeight: '60vh',
+        background: 'var(--bg-surface)',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px dashed var(--border-default)',
+        gap: 'var(--space-4)',
+        marginTop: 'var(--space-8)'
+      }}>
+        <div style={{
+          width: '80px',
+          height: '80px',
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1))',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--accent-violet)',
+          marginBottom: 'var(--space-2)'
+        }}>
+          <Upload size={36} />
+        </div>
+        <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 800 }}>No Pipeline Data</h2>
+        <p style={{ fontSize: 'var(--text-base)', color: 'var(--text-secondary)', maxWidth: '450px', marginBottom: 'var(--space-4)' }}>
+          Please upload your Recruiter CSV, GitHub CSV, and Candidate Resumes to run the transformer pipeline.
+        </p>
+        <button onClick={() => navigate('/')} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <Play size={16} />
+          Upload Files and Run
+        </button>
+      </div>
+    );
+  }
+
+  if (hasResults && candidates.length === 0) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 'var(--space-12) var(--space-6)',
+        textAlign: 'center',
+        minHeight: '60vh',
+        background: 'var(--bg-surface)',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px dashed var(--border-default)',
+        gap: 'var(--space-4)',
+        marginTop: 'var(--space-8)'
+      }}>
+        <div style={{
+          width: '80px',
+          height: '80px',
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(245, 158, 11, 0.1))',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--status-error)',
+          marginBottom: 'var(--space-2)'
+        }}>
+          <Info size={36} color="var(--status-error)" />
+        </div>
+        <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 800 }}>No Candidates Processed</h2>
+        <p style={{ fontSize: 'var(--text-base)', color: 'var(--text-secondary)', maxWidth: '450px', marginBottom: 'var(--space-4)' }}>
+          The pipeline completed successfully, but no candidate profiles could be merged. Please verify that the names or emails in your Recruiter CSV match those in your Resumes or GitHub CSV.
+        </p>
+        <button onClick={() => navigate('/')} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <Play size={16} />
+          Upload Files and Try Again
+        </button>
+      </div>
+    );
+  }
 
   const handleSelectCandidate = (candidate) => {
     dispatch({ type: 'SELECT_CANDIDATE', payload: candidate });
@@ -117,8 +212,8 @@ export default function Results() {
       )}
 
       {/* Candidates Scrollable Master Table */}
-      <motion.div 
-        className="glass-card-static" 
+      <motion.div
+        className="glass-card-static"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         style={{ overflow: 'hidden' }}
@@ -160,7 +255,7 @@ export default function Results() {
             <tbody>
               {candidates.map((c) => {
                 const isSelected = getCid(selectedCandidate) === getCid(c);
-                
+
                 const getFieldVal = (obj, key) => {
                   if (!obj || !obj[key]) return '—';
                   const raw = obj[key];
@@ -173,7 +268,7 @@ export default function Results() {
                 const candidateConf = getFieldVal(c, 'overall_confidence') || 0.75;
 
                 return (
-                  <tr 
+                  <tr
                     key={getCid(c)}
                     onClick={() => handleSelectCandidate(c)}
                     style={{
@@ -267,6 +362,11 @@ export default function Results() {
                         {unwrap(completeCandidate.headline)}
                       </div>
                     )}
+                    {unwrap(completeCandidate.github_profile)?.bio && (
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '4px' }}>
+                        "{unwrap(completeCandidate.github_profile).bio}"
+                      </div>
+                    )}
                     <div style={{ marginTop: 'var(--space-2)' }}>
                       <ConfidenceBadge confidence={unwrap(completeCandidate.overall_confidence) || 0.75} size="md" />
                     </div>
@@ -276,9 +376,7 @@ export default function Results() {
                 {/* Core parameters */}
                 <FieldRow icon={Mail} label="Email list" value={unwrap(completeCandidate.emails)?.join(', ')} />
                 <FieldRow icon={Phone} label="Phone numbers" value={unwrap(completeCandidate.phones)?.join(', ')} />
-                <FieldRow icon={MapPin} label="Location coordinates" value={
-                  completeCandidate.location ? `${unwrap(completeCandidate.location).city}, ${unwrap(completeCandidate.location).region}, ${unwrap(completeCandidate.location).country}` : '—'
-                } />
+                <FieldRow icon={MapPin} label="Location coordinates" value={getFormattedLocation(completeCandidate.location)} />
                 <FieldRow icon={Clock} label="Total Experience" value={
                   unwrap(completeCandidate.years_experience) ? `${unwrap(completeCandidate.years_experience)} years` : 'N/A'
                 } />
@@ -413,12 +511,41 @@ export default function Results() {
                   })} />
                 </div>
               )}
+
+              {/* GitHub Repositories */}
+              {unwrap(completeCandidate.github_repos) && unwrap(completeCandidate.github_repos).length > 0 && (
+                <div className="glass-card-static" style={{ padding: 'var(--space-6)', marginTop: 'var(--space-6)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                    <GithubIcon size={18} color="var(--accent-purple)" />
+                    <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700 }}>GitHub Repositories</h3>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                    {unwrap(completeCandidate.github_repos).map((repo, i) => (
+                      <div key={i} style={{
+                        padding: 'var(--space-3)',
+                        background: 'rgba(168, 85, 247, 0.03)',
+                        border: '1px solid rgba(168, 85, 247, 0.1)',
+                        borderRadius: 'var(--radius-md)',
+                      }}>
+                        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                          {repo.name}
+                        </div>
+                        {repo.description && (
+                          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                            {repo.description}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Merge Conflicts Resolved Section */}
           {conflicts.length > 0 && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}

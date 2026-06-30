@@ -20,9 +20,7 @@ export default function ConfigEditor() {
   const [saved, setSaved] = useState(false);
   const [validationErrors, setValidationErrors] = useState([]);
 
-  useEffect(() => {
-    dispatch({ type: 'SET_CONFIG', payload: 'full' });
-  }, []);
+
 
   // Validate config
   useEffect(() => {

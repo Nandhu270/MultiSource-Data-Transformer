@@ -108,6 +108,7 @@ const initialState = {
   // Results
   results: {
     candidates: [],
+    completeCandidates: [],
     selectedCandidate: null,
     outputJSON: null,
     conflicts: [],
@@ -222,6 +223,44 @@ function pipelineReducer(state, action) {
         }
       };
     }
+    case 'COMPLETE_PIPELINE_LIVE': {
+      const candidates = action.payload.candidates;
+      const conflicts = action.payload.conflicts;
+      
+      const getConfVal = (c) => {
+        if (!c) return 0.75;
+        const raw = c.overall_confidence;
+        return typeof raw === 'object' && raw !== null && 'value' in raw ? raw.value : (raw || 0.75);
+      };
+
+      const avgConfidence = candidates.length > 0
+        ? (candidates.reduce((acc, c) => acc + getConfVal(c), 0) / candidates.length).toFixed(2)
+        : 0;
+
+      return {
+        ...state,
+        pipeline: {
+          ...state.pipeline,
+          status: 'completed',
+          currentStage: 7,
+          duration: action.payload.duration
+        },
+        results: {
+          ...state.results,
+          candidates: candidates,
+          completeCandidates: action.payload.completeCandidates || [],
+          selectedCandidate: candidates[0] || null,
+          outputJSON: candidates,
+          conflicts: conflicts,
+          stats: {
+            candidatesProcessed: candidates.length,
+            avgConfidence: parseFloat(avgConfidence),
+            conflictsResolved: conflicts.length,
+            totalRuns: state.results.runs.length + 1
+          }
+        }
+      };
+    }
     case 'SELECT_CANDIDATE':
       return {
         ...state,
@@ -237,6 +276,7 @@ function pipelineReducer(state, action) {
         results: {
           ...state.results,
           candidates: [],
+          completeCandidates: [],
           selectedCandidate: null,
           outputJSON: null,
           conflicts: []

@@ -20,6 +20,14 @@ export default function ConflictLog({ conflicts }) {
     );
   }
 
+  const formatValue = (val) => {
+    if (val === null || val === undefined) return '—';
+    if (typeof val === 'object') {
+      return JSON.stringify(val);
+    }
+    return String(val);
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
       {conflicts.map((conflict) => {
@@ -116,6 +124,7 @@ export default function ConflictLog({ conflicts }) {
                         background: 'rgba(239, 68, 68, 0.05)',
                         border: '1px solid rgba(239, 68, 68, 0.15)',
                         borderRadius: 'var(--radius-sm)',
+                        minWidth: 0,
                       }}>
                         <div style={{
                           fontSize: '10px',
@@ -132,8 +141,9 @@ export default function ConflictLog({ conflicts }) {
                           color: 'var(--text-secondary)',
                           textDecoration: 'line-through',
                           opacity: 0.7,
+                          wordBreak: 'break-all',
                         }}>
-                          "{conflict.loser.value}"
+                          {formatValue(conflict.loser.value)}
                         </div>
                         <div style={{ marginTop: 'var(--space-1)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                           <SourceBadge source={conflict.loser.source} size="sm" />
@@ -141,7 +151,7 @@ export default function ConflictLog({ conflicts }) {
                         </div>
                       </div>
 
-                      <ArrowRight size={16} color="var(--text-muted)" />
+                      <ArrowRight size={16} color="var(--text-muted)" style={{ flexShrink: 0 }} />
 
                       {/* Winner */}
                       <div style={{
@@ -150,6 +160,7 @@ export default function ConflictLog({ conflicts }) {
                         background: 'rgba(34, 197, 94, 0.05)',
                         border: '1px solid rgba(34, 197, 94, 0.15)',
                         borderRadius: 'var(--radius-sm)',
+                        minWidth: 0,
                       }}>
                         <div style={{
                           fontSize: '10px',
@@ -164,8 +175,9 @@ export default function ConflictLog({ conflicts }) {
                           fontSize: 'var(--text-sm)',
                           fontWeight: 600,
                           color: 'var(--text-primary)',
+                          wordBreak: 'break-all',
                         }}>
-                          "{conflict.winner.value}"
+                          {formatValue(conflict.winner.value)}
                         </div>
                         <div style={{ marginTop: 'var(--space-1)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                           <SourceBadge source={conflict.winner.source} size="sm" />
