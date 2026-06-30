@@ -21,6 +21,13 @@ export default function UploadSources() {
 
   const [pipelineResult, setPipelineResult] = useState(null);
 
+  // Enforce stepped wizard flow - redirect to config if not saved
+  useEffect(() => {
+    if (!state.configSaved && state.pipeline.status !== 'completed') {
+      navigate('/');
+    }
+  }, [state.configSaved, state.pipeline.status, navigate]);
+
   // ─── 1. Resume Folder Upload ─────────────────────────────────────────
   const handleFolderUpload = (e) => {
     const fileList = e.target.files;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -20,6 +20,13 @@ import ConflictLog from '../components/ui/ConflictLog';
 export default function Results() {
   const navigate = useNavigate();
   const { state, dispatch } = usePipeline();
+
+  // Enforce stepped wizard flow - redirect if not completed
+  useEffect(() => {
+    if (state.pipeline.status !== 'completed') {
+      navigate('/');
+    }
+  }, [state.pipeline.status, navigate]);
 
   // Multi-candidate setup
   const hasResults = state.pipeline.status === 'completed';
@@ -232,7 +239,7 @@ export default function Results() {
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 700 }}>Candidate Profiles (Scrollable List)</h2>
+          <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 700 }}>Candidate Profiles</h2>
           <span className="badge badge-success">
             <CheckCircle2 size={12} /> schema valid
           </span>
