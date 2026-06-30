@@ -26,7 +26,7 @@ export default function ConfidenceBadge({ confidence, size = 'md', showLabel = t
 
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-      {/* Progress bar */}
+      {}
       <div style={{
         width: size === 'lg' ? '60px' : '40px',
         height: s.barHeight,
@@ -43,7 +43,7 @@ export default function ConfidenceBadge({ confidence, size = 'md', showLabel = t
         }} />
       </div>
 
-      {/* Badge */}
+      {}
       <span style={{
         display: 'inline-flex',
         alignItems: 'center',

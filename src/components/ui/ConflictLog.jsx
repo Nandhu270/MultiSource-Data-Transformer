@@ -39,7 +39,7 @@ export default function ConflictLog({ conflicts }) {
             transition: 'border-color 0.2s ease',
             borderColor: isExpanded ? 'rgba(245, 158, 11, 0.2)' : undefined,
           }}>
-            {/* Summary row */}
+            {}
             <button
               onClick={() => setExpandedId(isExpanded ? null : conflict.id)}
               style={{
@@ -92,7 +92,7 @@ export default function ConflictLog({ conflicts }) {
               }
             </button>
 
-            {/* Details */}
+            {}
             <AnimatePresence>
               {isExpanded && (
                 <motion.div
@@ -108,7 +108,7 @@ export default function ConflictLog({ conflicts }) {
                     flexDirection: 'column',
                     gap: 'var(--space-3)',
                   }}>
-                    {/* Conflict visual */}
+                    {}
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -117,7 +117,7 @@ export default function ConflictLog({ conflicts }) {
                       background: 'rgba(148, 163, 184, 0.03)',
                       borderRadius: 'var(--radius-md)',
                     }}>
-                      {/* Loser */}
+                      {}
                       <div style={{
                         flex: 1,
                         padding: 'var(--space-3)',
@@ -153,7 +153,7 @@ export default function ConflictLog({ conflicts }) {
 
                       <ArrowRight size={16} color="var(--text-muted)" style={{ flexShrink: 0 }} />
 
-                      {/* Winner */}
+                      {}
                       <div style={{
                         flex: 1,
                         padding: 'var(--space-3)',
@@ -186,7 +186,7 @@ export default function ConflictLog({ conflicts }) {
                       </div>
                     </div>
 
-                    {/* Rule explanation */}
+                    {}
                     <div style={{
                       fontSize: 'var(--text-xs)',
                       color: 'var(--text-muted)',

@@ -42,7 +42,7 @@ export default function Dashboard() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
-      {/* Page header */}
+      {}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <h1 style={{ fontSize: 'var(--text-3xl)', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 'var(--space-2)' }}>
           Pipeline <span className="gradient-text">Dashboard</span>
@@ -52,7 +52,7 @@ export default function Dashboard() {
         </p>
       </motion.div>
 
-      {/* Stats row */}
+      {}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-4)' }}>
         <StatCard icon={Users} label="Candidates Processed" value={stats.candidatesProcessed} color="violet" delay={0} trend={12} />
         <StatCard icon={TrendingUp} label="Avg Confidence" value={stats.avgConfidence} color="cyan" delay={1} />
@@ -60,7 +60,7 @@ export default function Dashboard() {
         <StatCard icon={BarChart3} label="Total Runs" value={stats.totalRuns} color="green" delay={3} />
       </div>
 
-      {/* Pipeline stages */}
+      {}
       <motion.div className="glass-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} style={{ padding: 'var(--space-6)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-6)' }}>
           <div>
@@ -74,9 +74,9 @@ export default function Dashboard() {
         <PipelineStages stages={pipelineStages} currentStage={state.pipeline.currentStage} status={state.pipeline.status} />
       </motion.div>
 
-      {/* Two-column: Quick Actions + Recent Runs */}
+      {}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: 'var(--space-6)' }}>
-        {/* Quick Actions */}
+        {}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
           <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, marginBottom: 'var(--space-4)' }}>Quick Actions</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
@@ -110,7 +110,7 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        {/* Recent Runs */}
+        {}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.35 }}>
           <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, marginBottom: 'var(--space-4)' }}>Recent Pipeline Runs</h2>
           <div className="glass-card-static" style={{ overflow: 'hidden' }}>

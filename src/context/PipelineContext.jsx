@@ -15,10 +15,10 @@ function projectCandidates(candidates, config) {
       const path = field.path;
       const from = field.from || path;
 
-      // Extract the value from candidate
+      
       let val = undefined;
       
-      // Resolve basic nested properties
+      
       if (from.includes('.')) {
         const parts = from.split('.');
         let current = candidate;
@@ -35,18 +35,18 @@ function projectCandidates(candidates, config) {
         val = candidate[from];
       }
 
-      // Apply on_missing policy
+      
       if ((val === undefined || val === null) && config.on_missing === 'null') {
         val = null;
       }
 
       if (val !== undefined && val !== null) {
         if (config.include_confidence) {
-          // Wrapped value matching the configuration fields definition
+          
           let source = 'merged';
           let confidence = candidate.overall_confidence;
 
-          // Deduce matching source/confidence if available
+          
           if (from.startsWith('emails') || from === 'primary_email') {
             source = 'recruiter_csv';
             confidence = 0.9;
@@ -91,21 +91,21 @@ function projectCandidates(candidates, config) {
 }
 
 const initialState = {
-  // Source uploads — folder for resumes, file for CSVs
+  
   sources: {
     recruiterCsv: { file: null, status: 'empty', filename: '' },
     githubCsv: { file: null, status: 'empty', filename: '' },
     resumeFolder: { files: [], status: 'empty', folderName: '', fileCount: 0 }
   },
-  // Pipeline execution
+  
   pipeline: {
-    status: 'idle', // idle | running | completed | error
+    status: 'idle', 
     currentStage: 0,
     totalStages: 7,
     startTime: null,
     duration: null
   },
-  // Results
+  
   results: {
     candidates: [],
     completeCandidates: [],
@@ -120,7 +120,7 @@ const initialState = {
       totalRuns: mockPipelineRuns.length
     }
   },
-  // Config
+  
   activeConfig: 'full',
   customConfig: configPresets.full.config,
   configSaved: false

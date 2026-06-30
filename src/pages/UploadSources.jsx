@@ -22,14 +22,14 @@ export default function UploadSources() {
   const [pipelineResult, setPipelineResult] = useState(null);
   const [jobDescription, setJobDescription] = useState('');
 
-  // Enforce stepped wizard flow - redirect to config if not saved
+  
   useEffect(() => {
     if (!state.configSaved && state.pipeline.status !== 'completed') {
       navigate('/');
     }
   }, [state.configSaved, state.pipeline.status, navigate]);
 
-  // ─── 1. Resume Folder Upload ─────────────────────────────────────────
+  
   const handleFolderUpload = (e) => {
     const fileList = e.target.files;
     if (!fileList || fileList.length === 0) return;
@@ -52,7 +52,7 @@ export default function UploadSources() {
     });
   };
 
-  // ─── 2. Recruiter CSV Upload ─────────────────────────────────────────
+  
   const handleRecruiterCsv = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -60,7 +60,7 @@ export default function UploadSources() {
     }
   };
 
-  // ─── 3. GitHub CSV Upload ────────────────────────────────────────────
+  
   const handleGithubCsv = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -110,7 +110,7 @@ export default function UploadSources() {
       const result = await response.json();
       const duration = ((Date.now() - startTime) / 1000).toFixed(1);
 
-      // Store result locally to trigger the success animation on the loading screen
+      
       setPipelineResult({
         candidates: result.candidates,
         completeCandidates: result.complete_candidates,
@@ -155,12 +155,12 @@ export default function UploadSources() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
-      {/* Hidden file inputs */}
+      {}
       <input ref={folderInputRef} type="file" webkitdirectory="" directory="" multiple onChange={handleFolderUpload} style={{ display: 'none' }} />
       <input ref={recruiterCsvRef} type="file" accept=".csv" onChange={handleRecruiterCsv} style={{ display: 'none' }} />
       <input ref={githubCsvRef} type="file" accept=".csv" onChange={handleGithubCsv} style={{ display: 'none' }} />
 
-      {/* Page header */}
+      {}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <h1 style={{ fontSize: 'var(--text-3xl)', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 'var(--space-2)' }}>
           Upload <span className="gradient-text">Sources</span>
@@ -171,14 +171,14 @@ export default function UploadSources() {
         </p>
       </motion.div>
 
-      {/* ═══ GRIDS ═══ */}
+      {}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
         gap: 'var(--space-6)',
       }}>
 
-        {/* 1. Resume Folder */}
+        {}
         <div className="glass-card" style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '300px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
@@ -208,7 +208,7 @@ export default function UploadSources() {
           </div>
         </div>
 
-        {/* 2. Recruiter CSV */}
+        {}
         <div className="glass-card" style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '300px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
@@ -237,7 +237,7 @@ export default function UploadSources() {
           </div>
         </div>
 
-        {/* 3. GitHub CSV */}
+        {}
         <div className="glass-card" style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '300px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
@@ -268,7 +268,7 @@ export default function UploadSources() {
 
       </div>
 
-      {/* Job Description Panel */}
+      {}
       <motion.div className="glass-card" style={{ padding: 'var(--space-6)' }}>
         <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, marginBottom: 'var(--space-2)' }}>
           Job Description (Optional)
@@ -294,7 +294,7 @@ export default function UploadSources() {
         />
       </motion.div>
 
-      {/* Execution panel */}
+      {}
       <motion.div style={{
         display: 'flex',
         alignItems: 'center',
@@ -336,8 +336,6 @@ export default function UploadSources() {
   );
 }
 
-// ─── Simple Pipeline Processing View ──────────────────────────────────────────
-
 const stages = [
   { title: 'Initializing Data', desc: 'Reading recruiter and GitHub CSV files...' },
   { title: 'Loading Resumes', desc: 'Loading candidate resumes from folder...' },
@@ -351,24 +349,24 @@ const stages = [
 function PipelineProcessing({ sources, pipelineResult, onAnimationComplete }) {
   const [progress, setProgress] = useState(0);
 
-  // Derive stage index from progress percentage
+  
   const stageIndex = Math.min(6, Math.floor((progress / 100) * 7));
   const currentStage = stages[stageIndex];
 
-  // Progress Bar Loop
+  
   useEffect(() => {
     let animId;
     const updateProgress = () => {
       setProgress((prev) => {
         if (pipelineResult) {
-          // If backend has completed, accelerate to 100%
+          
           if (prev >= 100) {
             cancelAnimationFrame(animId);
             return 100;
           }
           return Math.min(100, prev + 3);
         } else {
-          // Asymptotic rise towards 95%
+          
           if (prev >= 95) {
             return 95;
           }
@@ -381,7 +379,7 @@ function PipelineProcessing({ sources, pipelineResult, onAnimationComplete }) {
     return () => cancelAnimationFrame(animId);
   }, [pipelineResult]);
 
-  // Trigger completion callback when progress hits 100
+  
   useEffect(() => {
     if (progress >= 100 && pipelineResult) {
       const timeout = setTimeout(() => {
@@ -401,7 +399,7 @@ function PipelineProcessing({ sources, pipelineResult, onAnimationComplete }) {
       gap: 'var(--space-6)',
       textAlign: 'center',
     }}>
-      {/* Centered minimalist card */}
+      {}
       <div className="glass-card-static" style={{
         width: '100%',
         maxWidth: '400px',
@@ -411,7 +409,7 @@ function PipelineProcessing({ sources, pipelineResult, onAnimationComplete }) {
         alignItems: 'center',
         gap: 'var(--space-5)',
       }}>
-        {/* Simple elegant spinner */}
+        {}
         <div style={{
           width: '56px',
           height: '56px',
@@ -421,7 +419,7 @@ function PipelineProcessing({ sources, pipelineResult, onAnimationComplete }) {
           animation: 'spin 1s linear infinite',
         }} />
 
-        {/* Status text */}
+        {}
         <div>
           <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
             {progress >= 100 ? 'Processing Complete' : 'Processing Profiles...'}
@@ -431,7 +429,7 @@ function PipelineProcessing({ sources, pipelineResult, onAnimationComplete }) {
           </p>
         </div>
 
-        {/* Simple Progress Bar */}
+        {}
         <div style={{ width: '100%' }}>
           <div style={{ width: '100%', height: '4px', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '2px', overflow: 'hidden', marginBottom: '6px' }}>
             <div style={{

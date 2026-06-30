@@ -50,7 +50,7 @@ export default function PipelineStages({ stages, currentStage, status }) {
               flex: 1,
               position: 'relative',
             }}>
-              {/* Connector line */}
+              {}
               {index > 0 && (
                 <div style={{
                   position: 'absolute',
@@ -66,7 +66,7 @@ export default function PipelineStages({ stages, currentStage, status }) {
                 }} />
               )}
 
-              {/* Stage circle */}
+              {}
               <motion.div
                 animate={isCurrent ? { scale: [1, 1.1, 1] } : {}}
                 transition={{ duration: 1.5, repeat: Infinity }}
@@ -94,7 +94,7 @@ export default function PipelineStages({ stages, currentStage, status }) {
                 )}
               </motion.div>
 
-              {/* Label */}
+              {}
               <div style={{
                 marginTop: 'var(--space-2)',
                 textAlign: 'center',

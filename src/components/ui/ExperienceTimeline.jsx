@@ -29,7 +29,7 @@ export default function ExperienceTimeline({ experiences }) {
       position: 'relative',
       paddingLeft: 'var(--space-8)',
     }}>
-      {/* Vertical line */}
+      {}
       <div style={{
         position: 'absolute',
         left: '15px',
@@ -51,7 +51,7 @@ export default function ExperienceTimeline({ experiences }) {
             paddingBottom: index < experiences.length - 1 ? 'var(--space-6)' : '0',
           }}
         >
-          {/* Timeline dot */}
+          {}
           <div style={{
             position: 'absolute',
             left: '-25px',
@@ -65,7 +65,7 @@ export default function ExperienceTimeline({ experiences }) {
             zIndex: 1,
           }} />
 
-          {/* Card */}
+          {}
           <div className="glass-card-static" style={{
             padding: 'var(--space-4)',
           }}>

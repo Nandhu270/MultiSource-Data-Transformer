@@ -211,3 +211,14 @@ $$\text{Fallback Confidence} = \min \left( \frac{C_{\text{name}} + C_{\text{loc}
     npm run dev
     ```
     The frontend client will open at `http://localhost:5173`.
+
+---
+
+### Step 3: Run Automated Tests
+To verify the mathematical correctness, matcher scoring, normalizers, and parsing scripts:
+1. Ensure you are in the `Backend` directory with your virtual environment activated.
+2. Run the unit tests using `pytest`:
+    ```bash
+    venv\Scripts\python -m pytest
+    ```
+    All 17 integration and mathematical assertions should output as passed.

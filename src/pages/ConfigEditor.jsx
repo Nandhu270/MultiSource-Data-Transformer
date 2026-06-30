@@ -22,9 +22,7 @@ export default function ConfigEditor() {
   const [saved, setSaved] = useState(false);
   const [validationErrors, setValidationErrors] = useState([]);
 
-
-
-  // Validate config
+  
   useEffect(() => {
     const errors = [];
     const hasRequired = config.fields.some(f => f.required);
@@ -69,7 +67,7 @@ export default function ConfigEditor() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
-      {/* Page header */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -112,8 +110,6 @@ export default function ConfigEditor() {
           </button>
         </div>
       </motion.div>
-
-
 
       {/* Validation errors */}
       {validationErrors.length > 0 && (

@@ -5,7 +5,7 @@ export default function StatCard({ icon: Icon, label, value, suffix = '', trend,
   const [displayValue, setDisplayValue] = useState(0);
   const ref = useRef(null);
 
-  // Animated counter
+  
   useEffect(() => {
     const numValue = typeof value === 'number' ? value : parseFloat(value);
     if (isNaN(numValue)) {
@@ -54,7 +54,7 @@ export default function StatCard({ icon: Icon, label, value, suffix = '', trend,
         overflow: 'hidden',
       }}
     >
-      {/* Glow orb */}
+      {}
       <div style={{
         position: 'absolute',
         top: '-20px',

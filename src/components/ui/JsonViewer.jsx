@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 
-// Custom dark theme matching our design
 const customTheme = {
   'code[class*="language-"]': {
     color: '#e2e8f0',
@@ -39,7 +38,7 @@ export default function JsonViewer({ data, title = 'JSON Output', collapsible = 
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      // Fallback
+      
       const textArea = document.createElement('textarea');
       textArea.value = jsonString;
       document.body.appendChild(textArea);
@@ -55,7 +54,7 @@ export default function JsonViewer({ data, title = 'JSON Output', collapsible = 
     <div className="glass-card-static" style={{
       overflow: 'hidden',
     }}>
-      {/* Header */}
+      {}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -69,7 +68,7 @@ export default function JsonViewer({ data, title = 'JSON Output', collapsible = 
           alignItems: 'center',
           gap: 'var(--space-2)',
         }}>
-          {/* Dot indicators */}
+          {}
           <div style={{ display: 'flex', gap: '6px' }}>
             <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444', opacity: 0.8 }} />
             <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b', opacity: 0.8 }} />
@@ -106,7 +105,7 @@ export default function JsonViewer({ data, title = 'JSON Output', collapsible = 
         </div>
       </div>
 
-      {/* Code */}
+      {}
       {!isCollapsed && (
         <div style={{
           maxHeight: maxHeight,

@@ -15,7 +15,7 @@ STANDARD_FIELDS = [
     "Data Science", "Artificial Intelligence", "Software Engineering"
 ]
 
-# A simple dictionary of skill aliases to canonical names
+                                                         
 SKILL_ALIASES = {
     "py": "python",
     "python3": "python",
@@ -42,7 +42,7 @@ def normalize_phone(phone_str: str, default_region: str = "IN") -> str:
     """
     if not phone_str:
         return ""
-    # Remove common characters that aren't digits or +
+                                                      
     cleaned = re.sub(r"[^\d+]", "", phone_str)
     try:
         parsed = phonenumbers.parse(cleaned, default_region)
@@ -65,7 +65,7 @@ def normalize_date(date_str: str) -> str:
     except Exception:
         pass
     
-    # Fallback regex check for YYYY-MM or YYYY
+                                              
     match_ym = re.search(r"(\d{4})[-/](\d{1,2})", date_str)
     if match_ym:
         year, month = match_ym.groups()
@@ -93,7 +93,7 @@ def normalize_education(line: str) -> dict:
     """
     line_clean = line.strip()
     
-    # 1. Extract Degree
+                       
     degree = ""
     if re.search(r"\bhsc\b|higher\s+secondary", line_clean, re.IGNORECASE):
         degree = "Higher Secondary"
@@ -104,7 +104,7 @@ def normalize_education(line: str) -> dict:
     elif re.search(r"\bb\.?\s*e\.?\b|\bbachelor\s+of\s+engineering\b", line_clean, re.IGNORECASE):
         degree = "B.E."
         
-    # 2. Extract Field
+                      
     field = ""
     if re.search(r"\bcomputer\s+science\b|\bcs\b|\bcse\b", line_clean, re.IGNORECASE):
         field = "Computer Science"
@@ -115,35 +115,35 @@ def normalize_education(line: str) -> dict:
     elif re.search(r"\bmechanical\b|\bmech\b", line_clean, re.IGNORECASE):
         field = "Mechanical Engineering"
         
-    # 3. Extract Year (Prefer the last 4-digit year in range)
+                                                             
     years = re.findall(r"\b(20\d{2}|19\d{2})\b", line_clean)
     end_year = int(years[-1]) if years else None
     
-    # 4. Clean Institution Name
+                               
     inst = line_clean
-    # Remove year ranges or individual years
+                                            
     inst = re.sub(r"\b(20\d{2}|19\d{2})\b", "", inst)
     inst = re.sub(r"\b\d{4}\s*-\s*\d{4}\b", "", inst)
-    # Remove CGPA / GPA / percentage details precisely
+                                                      
     inst = re.sub(r"\bcgpa\b\s*(?::\s*)?\d+(?:\.\d+)?", "", inst, flags=re.IGNORECASE)
     inst = re.sub(r"\bgpa\b\s*(?::\s*)?\d+(?:\.\d+)?", "", inst, flags=re.IGNORECASE)
     inst = re.sub(r"\bclass\b\s*(?::\s*)?\w+", "", inst, flags=re.IGNORECASE)
     inst = re.sub(r"\bpercentage\b\s*(?::\s*)?\d+(?:\.\d+)?%?", "", inst, flags=re.IGNORECASE)
     inst = re.sub(r"\bmarks\b\s*(?::\s*)?\d+", "", inst, flags=re.IGNORECASE)
     inst = re.sub(r"\b(?:cgpa|gpa)\b", "", inst, flags=re.IGNORECASE)
-    # Remove degree names
+                         
     inst = re.sub(r"\bb\.?\s*tech\b|\bb\.?\s*e\.?\b|\bm\.?\s*tech\b|\bbachelor\s+of\s+technology\b|\bbachelor\s+of\s+engineering\b", "", inst, flags=re.IGNORECASE)
-    # Remove field names
+                        
     inst = re.sub(r"\bcomputer\s+science\b|\binformation\s+technology\b|\bcomputer\s+science\s+and\s+engineering\b", "", inst, flags=re.IGNORECASE)
-    # Clean punctuation and extra spaces
+                                        
     inst = re.sub(r"^[,\-\s/]+|[,\-\s/]+$", "", inst)
     inst = re.sub(r"\s+", " ", inst).strip()
     
-    # If cleaned inst is empty or too short, fallback to a generic name
+                                                                       
     if not inst or len(inst) < 3:
         inst = "University"
         
-    # Fuzzy align degree to standard list
+                                         
     if degree:
         best_deg = None
         best_score = 0
@@ -155,7 +155,7 @@ def normalize_education(line: str) -> dict:
         if best_score >= 80:
             degree = best_deg
 
-    # Fuzzy align field of study to standard list
+                                                 
     if field:
         best_field = None
         best_score = 0

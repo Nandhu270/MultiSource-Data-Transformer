@@ -29,8 +29,8 @@ class GitHubData(BaseModel):
 class SkillMatchDetail(BaseModel):
     skill: str
     matched: bool
-    source: Optional[str] = None  # "language", "topic", "repo_name", "description"
-    priority_level: Optional[str] = None  # "Priority 1 (High)", "Priority 2 (Medium-High)", etc.
+    source: Optional[str] = None                                                   
+    priority_level: Optional[str] = None                                                         
     match_score: float
     matched_repos: List[str] = Field(default_factory=list, description="Names of repositories using this skill")
     skill_type: str = Field(..., description="'tech_stack' or 'conceptual'")
@@ -83,21 +83,21 @@ class GithubResumeMatcher:
         if not text_a or not text_b:
             return 0.0
         
-        # Simple word tokenization
+                                  
         words_a = [w for w in re.findall(r'\w+', text_a.lower()) if w]
         words_b = [w for w in re.findall(r'\w+', text_b.lower()) if w]
         
         if not words_a or not words_b:
             return 0.0
             
-        # Vocabulary
+                    
         vocab = set(words_a + words_b)
         
-        # Term Frequencies
+                          
         tf_a = {word: words_a.count(word) for word in vocab}
         tf_b = {word: words_b.count(word) for word in vocab}
         
-        # Document Frequencies (only two documents in our corpus)
+                                                                 
         df = {}
         for word in vocab:
             count = 0
@@ -111,12 +111,12 @@ class GithubResumeMatcher:
         vector_a = []
         vector_b = []
         for word in vocab:
-            # IDF = log(Total Docs / DF) + 1.0 (smooth idf)
+                                                           
             idf = math.log(2.0 / df[word]) + 1.0
             vector_a.append(tf_a[word] * idf)
             vector_b.append(tf_b[word] * idf)
             
-        # Compute Cosine
+                        
         dot_product = sum(a * b for a, b in zip(vector_a, vector_b))
         mag_a = math.sqrt(sum(a * a for a in vector_a))
         mag_b = math.sqrt(sum(b * b for b in vector_b))
@@ -129,7 +129,7 @@ class GithubResumeMatcher:
     @staticmethod
     def calculate_shannon_entropy(values: List[Any]) -> float:
         """Calculate Shannon Entropy for a list of values to measure disagreement/conflict."""
-        # Filter out empty/None values
+                                      
         valid_vals = [str(v).strip().lower() for v in values if v is not None and str(v).strip() != ""]
         if not valid_vals:
             return 0.0
@@ -158,7 +158,7 @@ class GithubResumeMatcher:
         Determine the fuzzy rating using standard triangular/trapezoidal membership functions.
         Maps the continuous score (0.0 to 1.0) into one of the four fuzzy sets: Low, Medium, High, Excellent.
         """
-        # Membership in 'Low'
+                             
         if score <= 0.2:
             mu_low = 1.0
         elif score <= 0.45:
@@ -166,7 +166,7 @@ class GithubResumeMatcher:
         else:
             mu_low = 0.0
             
-        # Membership in 'Medium'
+                                
         if score <= 0.25 or score >= 0.75:
             mu_med = 0.0
         elif score <= 0.5:
@@ -174,7 +174,7 @@ class GithubResumeMatcher:
         else:
             mu_med = (0.75 - score) / 0.25
             
-        # Membership in 'High'
+                              
         if score <= 0.55 or score >= 0.9:
             mu_high = 0.0
         elif score <= 0.75:
@@ -182,7 +182,7 @@ class GithubResumeMatcher:
         else:
             mu_high = (0.9 - score) / 0.15
             
-        # Membership in 'Excellent'
+                                   
         if score <= 0.8:
             mu_excel = 0.0
         else:
@@ -195,11 +195,11 @@ class GithubResumeMatcher:
             "Excellent": mu_excel
         }
         
-        # Return the key with the highest membership value
+                                                          
         return max(ratings, key=ratings.get)
 
     def match(self, resume: ResumeData, github: GitHubData, csv_title: str = "Software Engineer") -> MatchReport:
-        # 1. Set Union & Normalization
+                                      
         resume_skills = {normalize_skill(s) for s in resume.skills if normalize_skill(s)}
         
         github_languages = set()
@@ -216,19 +216,19 @@ class GithubResumeMatcher:
             if repo.description:
                 github_descriptions_text += " " + repo.description.lower()
         
-        # Use Regex & Word Boundary to extract matching skills mentioned in github repo names/descriptions
+                                                                                                          
         extracted_from_repos = set()
         all_text = " ".join(github_repo_names) + " " + github_descriptions_text
         for skill in resume_skills:
-            # Word boundary regex search to avoid partial word matches
+                                                                      
             pattern = r"\b" + re.escape(skill) + r"\b"
             if re.search(pattern, all_text):
                 extracted_from_repos.add(skill)
         
-        # Set Union of all GitHub skill indicators
+                                                  
         github_skills = github_languages | github_topics | extracted_from_repos
         
-        # Define CS fundamental and conceptual keywords
+                                                       
         fundamental_keywords = {
             "data structures", "algorithms", "dsa", 
             "operating systems", "os", "operating system",
@@ -249,7 +249,7 @@ class GithubResumeMatcher:
             "time management", "management"
         }
 
-        # Filter out conceptual skills from Jaccard calculation
+                                                               
         jaccard_resume_skills = {
             s for s in resume_skills 
             if not any(kw in s.lower() or fuzz.ratio(s.lower(), kw) >= 85 for kw in fundamental_keywords)
@@ -261,7 +261,7 @@ class GithubResumeMatcher:
         jaccard = self.calculate_jaccard_similarity(jaccard_resume_skills, jaccard_github_skills)
         dice = self.calculate_dice_coefficient(jaccard_resume_skills, jaccard_github_skills)
         
-        # 2. Rule-Based Priority & Weighted Heuristic for Tech Stack Match
+                                                                          
         skill_details = []
         total_tech_weight = 0.0
         
@@ -282,28 +282,28 @@ class GithubResumeMatcher:
                     repo_source = None
                     repo_priority = None
                     
-                    # Rule 1: Exact/Fuzzy match in primary language (High Priority)
+                                                                                   
                     if repo.language and (norm_skill == normalize_skill(repo.language) or fuzz.ratio(norm_skill, normalize_skill(repo.language)) >= 90):
                         repo_matched = True
                         repo_score = 1.0
                         repo_source = "language"
                         repo_priority = "Priority 1 (High)"
                     
-                    # Rule 2: Exact/Fuzzy match in topics (Medium-High Priority)
+                                                                                
                     elif any(norm_skill == normalize_skill(topic) or fuzz.ratio(norm_skill, normalize_skill(topic)) >= 90 for topic in repo.topics):
                         repo_matched = True
                         repo_score = 0.85
                         repo_source = "topic"
                         repo_priority = "Priority 2 (Medium-High)"
                     
-                    # Rule 3: Mention in repo name (Medium Priority)
+                                                                    
                     elif norm_skill in repo.name.lower() or fuzz.partial_ratio(norm_skill, repo.name.lower()) >= 85:
                         repo_matched = True
                         repo_score = 0.75
                         repo_source = "repo_name"
                         repo_priority = "Priority 3 (Medium)"
                     
-                    # Rule 4: Mention in repo description (Low-Medium Priority)
+                                                                               
                     elif repo.description and re.search(r"\b" + re.escape(norm_skill) + r"\b", repo.description.lower()):
                         repo_matched = True
                         repo_score = 0.60
@@ -317,7 +317,7 @@ class GithubResumeMatcher:
                             best_source = repo_source
                             best_priority = repo_priority
                 
-                # Classify skill
+                                
                 is_conceptual = False
                 skill_lower = skill.lower()
                 for keyword in fundamental_keywords:
@@ -337,7 +337,7 @@ class GithubResumeMatcher:
                     skill_type=skill_type
                 ))
             
-            # Calculate tech stack score using only tech_stack skills
+                                                                     
             tech_stack_skills = [s for s in skill_details if s.skill_type == "tech_stack"]
             if tech_stack_skills:
                 tech_stack_match_score = sum(s.match_score for s in tech_stack_skills) / len(tech_stack_skills)
@@ -346,7 +346,7 @@ class GithubResumeMatcher:
         else:
             tech_stack_match_score = 1.0
             
-        # 3. Fuzzy Project Matching (Rapid Fuzz)
+                                                
         project_details = []
         total_proj_score = 0.0
         if resume.projects:
@@ -355,7 +355,7 @@ class GithubResumeMatcher:
                 best_repo_match = None
                 
                 for repo in github.repos:
-                    # Compare project name to repo name & description using Rapid Fuzz
+                                                                                      
                     sim_name = fuzz.token_set_ratio(proj.lower(), repo.name.lower())
                     sim_desc = fuzz.partial_ratio(proj.lower(), repo.description.lower()) if repo.description else 0.0
                     sim = max(sim_name, sim_desc)
@@ -363,7 +363,7 @@ class GithubResumeMatcher:
                         max_proj_sim = sim
                         best_repo_match = repo.name
                 
-                # Scale similarity to 0.0 - 1.0
+                                               
                 scaled_sim = round(max_proj_sim / 100.0, 4)
                 matched = max_proj_sim >= 75.0
                 
@@ -378,7 +378,7 @@ class GithubResumeMatcher:
         else:
             project_name_match_score = 0.0
             
-        # 4. Profile Matching
+                             
         profile_name_sim = 0.0
         if resume.name and github.profile_name:
             profile_name_sim = fuzz.ratio(resume.name.lower(), github.profile_name.lower()) / 100.0
@@ -387,39 +387,39 @@ class GithubResumeMatcher:
         if github.email and github.email.lower() in [e.lower() for e in resume.emails]:
             email_matched = 1.0
         elif any(e.lower() in github.username.lower() for e in resume.emails):
-            # Fallback if username contains email prefix
+                                                        
             email_matched = 0.5
             
         profile_match_score = 0.5 * profile_name_sim + 0.5 * email_matched
         
-        # Calculate Cosine Similarity (TF-IDF) between resume title and csv_title
+                                                                                 
         resume_title = resume.title or ""
         semantic_title_match = self.calculate_cosine_similarity(resume_title, csv_title)
         
-        # Calculate Harmonic Match between tech_stack_match_score (Skill Match) and profile_match_score (Profile Match)
+                                                                                                                       
         harmonic_match_score = self.calculate_harmonic_match(tech_stack_match_score, profile_match_score)
         
-        # Base weights
+                      
         w_tech = 0.85
         w_profile = 0.15
         
-        # Base score based on tech stack match and profile verification
+                                                                       
         overall_score = (w_tech * tech_stack_match_score) + (w_profile * profile_match_score)
         
-        # Add a Project Match Boost if candidate has projects listed on resume that are verified on GitHub
+                                                                                                          
         if resume.projects and project_name_match_score > 0.0:
-            # Boost score proportionally by up to +0.10 based on how well projects match
+                                                                                        
             boost = project_name_match_score * 0.10
             overall_score = min(overall_score + boost, 1.0)
         
-        # Round scores
+                      
         overall_score = round(overall_score, 4)
         jaccard = round(jaccard, 4)
         tech_stack_match_score = round(tech_stack_match_score, 4)
         project_name_match_score = round(project_name_match_score, 4)
         profile_match_score = round(profile_match_score, 4)
         
-        # Get fuzzy logic rating
+                                
         fuzzy_rating = self.get_fuzzy_rating(overall_score)
         
         return MatchReport(

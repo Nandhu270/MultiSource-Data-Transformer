@@ -1,4 +1,4 @@
-// Custom GitHub icon since lucide-react removed it in recent versions
+
 export default function GithubIcon({ size = 24, color = 'currentColor', ...props }) {
   return (
     <svg

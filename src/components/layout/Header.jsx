@@ -29,7 +29,7 @@ export default function Header() {
       padding: '0 var(--space-8)',
       zIndex: 50,
     }}>
-      {/* Breadcrumb */}
+      {}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -52,7 +52,7 @@ export default function Header() {
         </span>
       </div>
 
-      {/* Navigation Tabs */}
+      {}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -106,13 +106,13 @@ export default function Header() {
         })}
       </div>
 
-      {/* Right side */}
+      {}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         gap: 'var(--space-4)',
       }}>
-        {/* Pipeline mini status */}
+        {}
         {state.pipeline.status === 'running' && (
           <div style={{
             display: 'flex',
@@ -159,7 +159,7 @@ export default function Header() {
           </div>
         )}
 
-        {/* Sources count */}
+        {}
         <div style={{
           display: 'flex',
           gap: 'var(--space-1)',

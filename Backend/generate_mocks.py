@@ -7,7 +7,7 @@ def create_mocks():
     resumes_dir = os.path.join(mock_dir, "resumes")
     os.makedirs(resumes_dir, exist_ok=True)
 
-    # 1. Recruiter CSV
+                      
     recruiter_data = {
         "name": ["Akash Chandra", "Priya Sharma", "Rahul Verma"],
         "email": ["akash.chandra@gmail.com", "priya.sharma@yahoo.com", "rahul.verma@gmail.com"],
@@ -17,7 +17,7 @@ def create_mocks():
     }
     pd.DataFrame(recruiter_data).to_csv(os.path.join(mock_dir, "recruiter.csv"), index=False)
 
-    # 2. GitHub CSV
+                   
     github_data = {
         "name": ["Akash Chandra", "Priya Sharma", "Rahul Verma"],
         "email": ["akash.chandra@gmail.com", "priya.sharma@yahoo.com", "rahul.verma@gmail.com"],
@@ -29,7 +29,7 @@ def create_mocks():
     }
     pd.DataFrame(github_data).to_csv(os.path.join(mock_dir, "github.csv"), index=False)
 
-    # 3. Resume 1 (Akash Chandra)
+                                 
     doc1 = docx.Document()
     doc1.add_heading("Akash Chandra", 0)
     doc1.add_paragraph("Email: akash.chandra@gmail.com, akash.c@infosys.com")
@@ -41,7 +41,7 @@ def create_mocks():
     doc1.add_paragraph("Education: VIT University, B.Tech in Computer Science, 2017")
     doc1.save(os.path.join(resumes_dir, "akash_resume.docx"))
 
-    # 4. Resume 2 (Priya Sharma)
+                                
     doc2 = docx.Document()
     doc2.add_heading("Priya Sharma", 0)
     doc2.add_paragraph("Email: priya.sharma@yahoo.com, priya.s@wipro.com")

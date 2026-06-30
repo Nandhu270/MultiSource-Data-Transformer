@@ -21,14 +21,14 @@ export default function Results() {
   const navigate = useNavigate();
   const { state, dispatch } = usePipeline();
 
-  // Enforce stepped wizard flow - redirect if not completed
+  
   useEffect(() => {
     if (state.pipeline.status !== 'completed') {
       navigate('/');
     }
   }, [state.pipeline.status, navigate]);
 
-  // Multi-candidate setup
+  
   const hasResults = state.pipeline.status === 'completed';
   const candidates = hasResults ? state.results.candidates : [];
   const selectedCandidate = state.results.selectedCandidate || candidates[0];
@@ -36,7 +36,7 @@ export default function Results() {
   const conflicts = hasResults ? state.results.conflicts : [];
   const outputJSON = hasResults ? state.results.outputJSON : null;
 
-  // Safe unwrap utility for wrapped object values (when include_confidence is active)
+  
   const unwrap = (val) => {
     if (val && typeof val === 'object' && 'value' in val && 'source' in val) {
       return val.value;
@@ -44,14 +44,14 @@ export default function Results() {
     return val;
   };
 
-  // Safe ID parsing helper for wrapped/plain formats
+  
   const getCid = (c) => {
     if (!c) return '';
     const raw = c.candidate_id;
     return typeof raw === 'object' && raw !== null && 'value' in raw ? raw.value : raw;
   };
 
-  // Safe location formatter to avoid double commas or empty parts
+  
   const getFormattedLocation = (locObj) => {
     const loc = unwrap(locObj);
     if (!loc) return 'No location mentioned';
@@ -63,12 +63,12 @@ export default function Results() {
     return parts.join(', ') || 'No location mentioned';
   };
 
-  // We now render strictly from the projected selectedCandidate containing only configured fields
+  
   const completeCandidate = selectedCandidate;
 
-  // Helper to check if a field path is present and enabled in the configuration schema
+  
   const hasField = (fieldPrefix) => {
-    if (!state.customConfig || !state.customConfig.fields) return true; // fallback to show all
+    if (!state.customConfig || !state.customConfig.fields) return true; 
     return state.customConfig.fields.some(f =>
       f.required !== false && (f.path === fieldPrefix || f.path.startsWith(fieldPrefix + '.'))
     );
@@ -174,7 +174,7 @@ export default function Results() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
-      {/* Page header */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -202,7 +202,7 @@ export default function Results() {
         </button>
       </motion.div>
 
-      {/* Info banner */}
+      {}
       {!hasResults && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{
           padding: 'var(--space-4)',
@@ -225,7 +225,7 @@ export default function Results() {
         </motion.div>
       )}
 
-      {/* Candidates Scrollable Master Table */}
+      {}
       <motion.div
         className="glass-card-static"
         initial={{ opacity: 0, y: 10 }}
@@ -246,7 +246,7 @@ export default function Results() {
           </span>
         </div>
 
-        {/* Scrollable table container */}
+        {}
         <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
             <thead style={{ position: 'sticky', top: 0, background: 'var(--bg-surface)', zIndex: 10, boxShadow: '0 1px 0 var(--border-subtle)' }}>
@@ -369,7 +369,7 @@ export default function Results() {
         </div>
       </motion.div>
 
-      {/* Detailed View Container (Shows complete fields + conflicts) */}
+      {}
       {completeCandidate && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           <div style={{
@@ -377,9 +377,9 @@ export default function Results() {
             gridTemplateColumns: '1fr 1fr',
             gap: 'var(--space-6)',
           }}>
-            {/* Left Column: Core Fields, Edu, Provenance */}
+            {}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-              {/* Profile card */}
+              {}
               <div className="glass-card-static" style={{ overflow: 'hidden' }}>
                 <div style={{
                   padding: 'var(--space-6)',
@@ -427,7 +427,7 @@ export default function Results() {
                   </div>
                 </div>
 
-                {/* Core parameters */}
+                {}
                 {hasField('full_name') && <FieldRow icon={User} label="Full Name" value={unwrap(completeCandidate.full_name)} />}
                 {hasField('emails') && <FieldRow icon={Mail} label="Email list" value={Array.isArray(unwrap(completeCandidate.emails)) ? unwrap(completeCandidate.emails).join(', ') : unwrap(completeCandidate.emails)} />}
                 {hasField('phones') && <FieldRow icon={Phone} label="Phone numbers" value={Array.isArray(unwrap(completeCandidate.phones)) ? unwrap(completeCandidate.phones).join(', ') : unwrap(completeCandidate.phones)} />}
@@ -436,7 +436,7 @@ export default function Results() {
                   unwrap(completeCandidate.years_experience) ? `${unwrap(completeCandidate.years_experience)} years` : 'N/A'
                 } />}
 
-                {/* Portfolio/Links */}
+                {}
                 {hasField('links') && unwrap(completeCandidate.links) && (
                   <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--border-subtle)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
@@ -469,14 +469,14 @@ export default function Results() {
                   </div>
                 )}
 
-                {/* ID */}
+                {}
                 <div style={{ padding: 'var(--space-3) var(--space-4)', fontSize: 'var(--text-xs)', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', background: 'rgba(148, 163, 184, 0.03)' }}>
                   <Hash size={11} style={{ verticalAlign: '-1px', marginRight: '4px' }} />
                   candidate_id: {getCid(completeCandidate)}
                 </div>
               </div>
 
-              {/* AI Insights & Summary Card */}
+              {}
               {completeCandidate.ai_analysis && (
                 <div className="glass-card-static" style={{ padding: 'var(--space-6)', border: '1px solid rgba(139, 92, 246, 0.2)', background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.02) 0%, rgba(6, 182, 212, 0.01) 100%)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
@@ -489,7 +489,7 @@ export default function Results() {
                   </p>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
-                    {/* Strengths */}
+                    {}
                     <div>
                       <h4 style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--status-success)', marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <Check size={12} /> Key Strengths
@@ -501,7 +501,7 @@ export default function Results() {
                       </ul>
                     </div>
 
-                    {/* Risks */}
+                    {}
                     <div>
                       <h4 style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--status-error)', marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <Info size={12} /> Potential Risks
@@ -516,7 +516,7 @@ export default function Results() {
                 </div>
               )}
 
-              {/* Advanced Match Details Card */}
+              {}
               {hasField('skills') && unwrap(completeCandidate.match_details) && (
                 <div className="glass-card-static" style={{ padding: 'var(--space-6)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
@@ -532,7 +532,7 @@ export default function Results() {
                     </span>
                   </div>
 
-                  {/* Scores Grid */}
+                  {}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
                     <div style={{ background: 'rgba(168, 85, 247, 0.03)', border: '1px solid rgba(168, 85, 247, 0.08)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
                       <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: '4px' }}>Tech Stack Match (75%)</div>
@@ -583,7 +583,7 @@ export default function Results() {
                     </div>
                   </div>
 
-                  {/* Scientific Ratios Section */}
+                  {}
                   <div style={{
                     borderTop: '1px dashed var(--border-subtle)',
                     paddingTop: 'var(--space-4)',
@@ -594,7 +594,7 @@ export default function Results() {
                       Rigorous Scientific Ratios
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
-                      {/* Dice-Sørensen */}
+                      {}
                       <div style={{ background: 'rgba(236, 72, 153, 0.03)', border: '1px solid rgba(236, 72, 153, 0.08)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
                         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: '4px' }}>Dice-Sørensen (Skill Match)</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
@@ -607,7 +607,7 @@ export default function Results() {
                         </div>
                       </div>
 
-                      {/* Cosine Title Match */}
+                      {}
                       <div style={{ background: 'rgba(249, 115, 22, 0.03)', border: '1px solid rgba(249, 115, 22, 0.08)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
                         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: '4px' }}>Semantic Title Match (Cosine TF-IDF)</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
@@ -620,7 +620,7 @@ export default function Results() {
                         </div>
                       </div>
 
-                      {/* Harmonic Mean (F1 Match) */}
+                      {}
                       <div style={{ background: 'rgba(99, 102, 241, 0.03)', border: '1px solid rgba(99, 102, 241, 0.08)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
                         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: '4px' }}>Harmonic Match (F1-Score)</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
@@ -633,7 +633,7 @@ export default function Results() {
                         </div>
                       </div>
 
-                      {/* Shannon Entropy */}
+                      {}
                       <div style={{ background: 'rgba(239, 68, 68, 0.03)', border: '1px solid rgba(239, 68, 68, 0.08)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
                         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: '4px' }}>Shannon Entropy (Conflict Ratio)</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
@@ -648,9 +648,9 @@ export default function Results() {
                     </div>
                   </div>
 
-                  {/* Skill Matches Breakdown */}
+                  {}
                   <div style={{ marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                    {/* Tech Stack Skills */}
+                    {}
                     <div>
                       <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 'var(--space-2)' }}>
                         Verified Tech Stack on GitHub
@@ -690,7 +690,7 @@ export default function Results() {
                       </div>
                     </div>
 
-                    {/* CS Fundamentals & Concepts */}
+                    {}
                     {unwrap(completeCandidate.match_details).skill_matches.some(s => s.skill_type === 'conceptual') && (
                       <div>
                         <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 'var(--space-2)' }}>
@@ -733,7 +733,7 @@ export default function Results() {
                     )}
                   </div>
 
-                  {/* Project Matches Breakdown */}
+                  {}
                   {unwrap(completeCandidate.match_details).project_matches && unwrap(completeCandidate.match_details).project_matches.length > 0 && (
                     <div>
                       <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 'var(--space-2)' }}>
@@ -775,7 +775,7 @@ export default function Results() {
                 </div>
               )}
 
-              {/* Education */}
+              {}
               {hasField('education') && Array.isArray(unwrap(completeCandidate.education)) && (
                 <div className="glass-card-static" style={{ padding: 'var(--space-6)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
@@ -798,7 +798,7 @@ export default function Results() {
                 </div>
               )}
 
-              {/* Provenance */}
+              {}
               {Array.isArray(unwrap(completeCandidate.provenance)) && (
                 <div className="glass-card-static" style={{ padding: 'var(--space-6)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
@@ -825,9 +825,9 @@ export default function Results() {
               )}
             </div>
 
-            {/* Right Column: Skills & Experience */}
+            {}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-              {/* Skills cloud */}
+              {}
               {hasField('skills') && Array.isArray(unwrap(completeCandidate.skills)) && (
                 <div className="glass-card-static" style={{ padding: 'var(--space-6)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
@@ -845,7 +845,7 @@ export default function Results() {
                 </div>
               )}
 
-              {/* Experience */}
+              {}
               {hasField('experience') && Array.isArray(unwrap(completeCandidate.experience)) && (
                 <div className="glass-card-static" style={{ padding: 'var(--space-6)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-5)' }}>
@@ -866,11 +866,10 @@ export default function Results() {
                 </div>
               )}
 
-
             </div>
           </div>
 
-          {/* Section-Wise Source Comparison */}
+          {}
           {completeCandidate.source_comparison && (
             <motion.div
               initial={{ opacity: 0, y: 15 }}
@@ -931,7 +930,7 @@ export default function Results() {
             </motion.div>
           )}
 
-          {/* Merge Conflicts Resolved Section */}
+          {}
           {(() => {
             const candidateConflicts = conflicts.filter(
               c => c.candidate_id === getCid(completeCandidate)
@@ -958,8 +957,6 @@ export default function Results() {
     </div>
   );
 }
-
-// ─── Helper: Field Row ─────────────────────────────────────────────────────────
 
 function FieldRow({ icon: Icon, label, value }) {
   if (!value) return null;

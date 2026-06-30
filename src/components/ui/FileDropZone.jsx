@@ -199,7 +199,7 @@ export default function FileDropZone({
           )}
         </AnimatePresence>
 
-        {/* Clear button */}
+        {}
         {status === 'uploaded' && onClear && (
           <button
             onClick={(e) => {

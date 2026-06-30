@@ -1,4 +1,4 @@
-// ─── Updated Mock Candidates Data (Canonical Schema List) ────────────────────────
+
 
 export const mockCandidates = [
   {
@@ -205,9 +205,7 @@ export const mockCandidates = [
   }
 ];
 
-export const mockCandidate = mockCandidates[0]; // fallback backward compatibility
-
-// ─── Mock Pipeline Run History ─────────────────────────────────────────────────
+export const mockCandidate = mockCandidates[0]; 
 
 export const mockPipelineRuns = [
   {
@@ -234,8 +232,6 @@ export const mockPipelineRuns = [
   }
 ];
 
-// ─── Mock Conflict Log ─────────────────────────────────────────────────────────
-
 export const mockConflicts = [
   {
     id: "conflict-001",
@@ -255,8 +251,6 @@ export const mockConflicts = [
   }
 ];
 
-// ─── Pipeline Stages ───────────────────────────────────────────────────────────
-
 export const pipelineStages = [
   { id: 1, name: "Detect", description: "Classify source types (Recruiter CSV, GitHub CSV, Resume folder)", icon: "Search" },
   { id: 2, name: "Extract", description: "Pull raw data from each source into native field maps", icon: "FileInput" },
@@ -266,8 +260,6 @@ export const pipelineStages = [
   { id: 6, name: "Project", description: "Reshape canonical record to config-driven output schema", icon: "Projector" },
   { id: 7, name: "Validate", description: "Validate projected output against dynamically built JSON Schema", icon: "CheckCircle2" }
 ];
-
-// ─── Output Schema Definition ──────────────────────────────────────────────────
 
 export const outputSchema = [
   { field: "candidate_id", type: "string", notes: "" },
@@ -284,8 +276,6 @@ export const outputSchema = [
   { field: "provenance", type: "[{ field, source, method }]", notes: "where each value came from" },
   { field: "overall_confidence", type: "number", notes: "" },
 ];
-
-// ─── Config Presets ────────────────────────────────────────────────────────────
 
 export const configPresets = {
   full: {
@@ -346,11 +336,7 @@ export const configPresets = {
   }
 };
 
-// ─── Mock JSON Output (matches canonical schema) ───────────────────────────────
-
 export const mockOutputJSON = mockCandidates;
-
-// ─── Source Metadata ───────────────────────────────────────────────────────────
 
 export const sourceMetadata = {
   recruiter_csv: { label: "Recruiter CSV", color: "#3b82f6", weight: 0.9 },
@@ -359,8 +345,6 @@ export const sourceMetadata = {
   resume: { label: "Resume", color: "#14b8a6", weight: 0.7 },
   resumes: { label: "Resume Folder", color: "#14b8a6", weight: 0.7 },
 };
-
-// ─── Confidence Formula ────────────────────────────────────────────────────────
 
 export const confidenceFormula = {
   source_weights: { recruiter_csv: 0.9, resume: 0.7, github: 0.6 },

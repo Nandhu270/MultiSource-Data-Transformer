@@ -37,7 +37,7 @@ export default function Sidebar({ collapsed, onToggle }) {
         overflow: 'hidden',
       }}
     >
-      {/* Logo */}
+      {}
       <div style={{
         padding: collapsed ? 'var(--space-5) var(--space-4)' : 'var(--space-5) var(--space-6)',
         borderBottom: '1px solid var(--border-subtle)',
@@ -90,7 +90,7 @@ export default function Sidebar({ collapsed, onToggle }) {
         </AnimatePresence>
       </div>
 
-      {/* Navigation */}
+      {}
       <nav style={{
         flex: 1,
         padding: 'var(--space-4)',
@@ -171,7 +171,7 @@ export default function Sidebar({ collapsed, onToggle }) {
         })}
       </nav>
 
-      {/* Pipeline status */}
+      {}
       <div style={{
         padding: 'var(--space-4)',
         borderTop: '1px solid var(--border-subtle)',
@@ -226,7 +226,7 @@ export default function Sidebar({ collapsed, onToggle }) {
         </div>
       </div>
 
-      {/* Collapse toggle */}
+      {}
       <button
         onClick={onToggle}
         style={{

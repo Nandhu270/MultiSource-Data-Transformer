@@ -15,7 +15,6 @@ GITHUB_URL_REGEX = re.compile(
     re.IGNORECASE,
 )
 
-
 def clean_value(val: Any) -> str:
     if val is None:
         return ""
@@ -41,7 +40,6 @@ def extract_github_username(value: Any) -> str:
 
     candidate = candidate.rstrip("/")
     return candidate if GITHUB_USERNAME_REGEX.match(candidate) else ""
-
 
 def normalize_github_url(value: Any) -> str:
     username = extract_github_username(value)
@@ -83,37 +81,36 @@ def fetch_github_profile(username: str) -> dict:
         print(f"Error fetching GitHub profile for {username}: {e}")
     return None
 
-# def fetch_github_repos(username: str) -> list:
-#     """
-#     Fetch public GitHub repositories for a user.
-#     Supports GITHUB_TOKEN environment variable to authenticate and increase rate limits.
-#     """
-#     if not username:
-#         return []
-#     url = f"https://api.github.com/users/{username}/repos?sort=updated&per_page=50"
-#     headers = github_headers()
-#     try:
-#         response = requests.get(url, headers=headers, timeout=4)
-#         if response.status_code == 200:
-#             repos = response.json()
-#             return [
-#                 {
-#     "name": r.get("name"),
-#     "description": r.get("description") or "",
-#                     "language": r.get("language"),
-#                     "topics": r.get("topics") or [],
-#                     "html_url": r.get("html_url"),
-#                     "updated_at": r.get("updated_at"),
-#                     "stargazers_count": r.get("stargazers_count", 0)
-#                 }
-#                 for r in repos
-#             ]
-#         else:
-#             print(f"GitHub repos API returned status code {response.status_code} for {username}: {response.text}")
-#     except Exception as e:
-#         print(f"Error fetching GitHub repos for {username}: {e}")
-#     return []
-
+                                                
+         
+                                                  
+                                                                                          
+         
+                      
+                   
+                                                                                     
+                                
+          
+                                                                  
+                                         
+                                     
+                      
+                   
+                            
+                                                
+                                                    
+                                                      
+                                                    
+                                                        
+                                                                      
+                   
+                                
+               
+               
+                                                                                                                    
+                            
+                                                                   
+               
 
 def fetch_github_repos(username: str) -> list:
     """
@@ -149,12 +146,12 @@ def fetch_github_repos(username: str) -> list:
 
     return []
 
-# Default priority and weights
+                              
 SOURCE_PRIORITY = ["recruiter_csv", "resume", "github_csv"]
 SOURCE_WEIGHTS = {"recruiter_csv": 0.9, "resume": 0.7, "github_csv": 0.6}
 METHOD_WEIGHTS = {"verbatim": 1.0, "regex": 0.8, "inferred": 0.6}
 
-# Common technical skills database for Job Description matching
+                                                               
 COMMON_SKILLS_DB = {
     "python", "javascript", "typescript", "react", "angular", "vue", "node", "node.js",
     "express", "django", "flask", "fastapi", "spring", "java", "c++", "c#", "ruby", "rails",
@@ -170,7 +167,7 @@ class CandidatePipeline:
         self.config = config
         self.job_description = job_description
         self.conflicts = []
-        self.raw_resumes = []  # List of { filename, text, contact_info, skills, experience, education }
+        self.raw_resumes = []                                                                           
         
     def load_resumes(self, resume_folder_path: str):
         """Pre-extract all resumes in the folder to match against CSVs later."""
@@ -204,16 +201,16 @@ class CandidatePipeline:
 
     def find_matching_resume(self, candidate_emails: List[str], candidate_name: str) -> Dict[str, Any]:
         """Find matching resume by email (exact) or name (fuzzy)."""
-        # 1. Match by email
+                           
         for r in self.raw_resumes:
             resume_emails = r["contact_info"]["emails"]
-            # Intersection of emails
+                                    
             if set(candidate_emails) & set(resume_emails):
                 return r
                 
-        # 2. Match by name fuzzy
+                                
         for r in self.raw_resumes:
-            # Simple heuristic: try to find candidate name in resume text first page or header
+                                                                                              
             first_lines = "\n".join(r["text"].split("\n")[:10])
             score = fuzz.partial_ratio(candidate_name.lower(), first_lines.lower())
             if score >= 90:
@@ -225,7 +222,7 @@ class CandidatePipeline:
         if github_df is None or github_df.empty:
             return None
             
-        # Try to find columns for email or name
+                                               
         email_col = next((c for c in github_df.columns if "email" in c.lower()), None)
         name_col = next((c for c in github_df.columns if "name" in c.lower()), None)
         link_col = next((c for c in github_df.columns if "github" in c.lower() or "link" in c.lower()), None)
@@ -240,13 +237,13 @@ class CandidatePipeline:
             loc_val = str(row[location_col]).strip()
             if not loc_val or loc_val.lower() in ["nan", "none", "null"]:
                 return None
-            # Handle simple "City, Country" split
+                                                 
             parts = [p.strip() for p in loc_val.split(",")]
             city = parts[0]
             country = parts[1] if len(parts) > 1 else "IN"
             return {"city": city, "region": "", "country": country}
 
-        # Match email
+                     
         if email_col:
             for _, row in github_df.iterrows():
                 row_email = str(row[email_col]).strip()
@@ -259,7 +256,7 @@ class CandidatePipeline:
                         "raw_row": row.to_dict() if hasattr(row, "to_dict") else dict(row)
                     }
                     
-        # Match name fuzzy
+                          
         if name_col:
             for _, row in github_df.iterrows():
                 row_name = str(row[name_col]).strip()
@@ -279,13 +276,13 @@ class CandidatePipeline:
         values: { source_name: { value, method } }
         Returns (winning_value, winning_source, confidence)
         """
-        # Filter out empty/None values
+                                      
         valid_sources = {k: v for k, v in values.items() if v["value"] is not None and v["value"] != ""}
         
         if not valid_sources:
             return None, "none", 0.0
             
-        # Find the winner based on SOURCE_PRIORITY
+                                                  
         winner_source = None
         for src in SOURCE_PRIORITY:
             if src in valid_sources:
@@ -293,14 +290,14 @@ class CandidatePipeline:
                 break
                 
         if not winner_source:
-            # Fallback to first available
+                                         
             winner_source = list(valid_sources.keys())[0]
             
         winner_data = valid_sources[winner_source]
         winner_val = winner_data["value"]
         winner_method = winner_data["method"]
         
-        # Check for conflicts with other valid sources
+                                                      
         for src, data in valid_sources.items():
             if src != winner_source:
                 val_differs = False
@@ -310,7 +307,7 @@ class CandidatePipeline:
                     val_differs = str(winner_val).strip().lower() != str(data["value"]).strip().lower()
                     
                 if val_differs:
-                    # Log conflict
+                                  
                     conflict_id = str(uuid.uuid4())[:8]
                     self.conflicts.append({
                         "id": f"conflict-{conflict_id}",
@@ -330,11 +327,11 @@ class CandidatePipeline:
                         "rule": f"FIELD_PRIORITY = {SOURCE_PRIORITY}"
                     })
                     
-        # Calculate confidence
+                              
         src_weight = SOURCE_WEIGHTS.get(winner_source, 0.5)
         mth_weight = METHOD_WEIGHTS.get(winner_method, 0.5)
         
-        # Corroboration boost: if other sources agree on the exact same value
+                                                                             
         corroborated = False
         for src, data in valid_sources.items():
             if src != winner_source:
@@ -345,7 +342,7 @@ class CandidatePipeline:
                     if str(winner_val).strip().lower() == str(data["value"]).strip().lower():
                         corroborated = True
                         
-        # Calculate Shannon Entropy for the field across valid sources
+                                                                      
         all_vals = [data["value"] for data in valid_sources.values()]
         entropy = GithubResumeMatcher.calculate_shannon_entropy(all_vals)
 
@@ -357,7 +354,7 @@ class CandidatePipeline:
 
     def process(self, recruiter_df: pd.DataFrame, github_df: pd.DataFrame) -> List[Dict[str, Any]]:
         """Run the end-to-end merging pipeline."""
-        # Replace NaN/NaT values with None
+                                          
         recruiter_df = recruiter_df.where(pd.notnull(recruiter_df), None)
         if github_df is not None and not github_df.empty:
             github_df = github_df.where(pd.notnull(github_df), None)
@@ -365,7 +362,7 @@ class CandidatePipeline:
         final_profiles = []
         raw_profiles = []
         
-        # Determine Recruiter CSV columns
+                                         
         email_col = next((c for c in recruiter_df.columns if "email" in c.lower()), None)
         name_col = next((c for c in recruiter_df.columns if "name" in c.lower()), None)
         phone_col = next((c for c in recruiter_df.columns if "phone" in c.lower()), None)
@@ -384,7 +381,7 @@ class CandidatePipeline:
 
         final_profiles = []
         
-        # Determine Recruiter CSV columns
+                                         
         email_col = next((c for c in recruiter_df.columns if "email" in c.lower()), None)
         name_col = next((c for c in recruiter_df.columns if "name" in c.lower()), None)
         phone_col = next((c for c in recruiter_df.columns if "phone" in c.lower()), None)
@@ -396,7 +393,7 @@ class CandidatePipeline:
             raw_email = clean_val(row[email_col]) if email_col else ""
             raw_phone = clean_val(row[phone_col]) if phone_col else ""
             
-            # Skip fully empty or junk rows (where both name and email are missing)
+                                                                                   
             if not raw_name and not raw_email:
                 continue
                 
@@ -407,20 +404,20 @@ class CandidatePipeline:
             emails_list = [raw_email] if raw_email else []
             phones_list = [normalize_phone(raw_phone)] if raw_phone else []
             
-            # 1. Match Resume
+                             
             matching_resume = self.find_matching_resume(emails_list, raw_name)
             if not matching_resume:
                 print(f"Omitting candidate {raw_name}: No matching resume found.")
                 continue
             
-            # Expand emails list from matching resume if found
+                                                              
             if matching_resume:
                 emails_list = list(set(emails_list + matching_resume["contact_info"]["emails"]))
             
-            # 2. Match GitHub
+                             
             matching_github = self.find_matching_github(github_df, emails_list, raw_name)
             
-            # Resolve and verify GitHub URL
+                                           
             github_url = None
             if matching_github and matching_github.get("github_url"):
                 github_url = matching_github["github_url"]
@@ -428,7 +425,7 @@ class CandidatePipeline:
                 github_url = matching_resume["contact_info"]["github"]
                 
             if not github_url:
-                # Check if recruiter CSV has it
+                                               
                 github_col = next((c for c in recruiter_df.columns if "github" in c.lower() or "git" in c.lower()), None)
                 if github_col:
                     github_url = clean_val(row[github_col])
@@ -437,29 +434,29 @@ class CandidatePipeline:
                 print(f"Omitting candidate {raw_name}: No GitHub URL found.")
                 continue
             
-            # Assemble raw values per field to resolve conflicts
-            # Format: { source: { value, method } }
+                                                                
+                                                   
             
-            # Name
+                  
             name_vals = {
                 "recruiter_csv": {"value": raw_name, "method": "verbatim"},
             }
             if matching_resume:
                 name_vals["resume"] = {"value": matching_resume.get("name") or raw_name, "method": "regex"}
                 
-            # Emails
+                    
             all_emails = list(emails_list)
             if matching_resume:
                 all_emails.extend(matching_resume["contact_info"]["emails"])
             all_emails = list(set([clean_val(e) for e in all_emails if clean_val(e)]))
             
-            # Phones
+                    
             all_phones = list(phones_list)
             if matching_resume:
                 all_phones.extend([normalize_phone(p) for p in matching_resume["contact_info"]["phones"]])
             all_phones = list(set([clean_val(p) for p in all_phones if clean_val(p)]))
             
-            # Location
+                      
             city_val = clean_val(row[city_col]) if city_col else ""
             country_val = clean_val(row[country_col]) if country_col else ""
             location_recruiter = {"city": city_val, "region": "", "country": country_val} if (city_val or country_val) else None
@@ -467,16 +464,16 @@ class CandidatePipeline:
             location_vals = {
                 "recruiter_csv": {"value": location_recruiter, "method": "verbatim"}
             }
-            # Location on resume
+                                
             if matching_resume and matching_resume.get("location"):
                 location_vals["resume"] = {"value": matching_resume["location"], "method": "inferred"}
-            # Location on GitHub CSV
+                                    
             if matching_github and matching_github.get("location"):
                 location_vals["github_csv"] = {"value": matching_github["location"], "method": "verbatim"}
 
-            # Links (github_url is already resolved)
+                                                    
             
-            # 3. Fetch GitHub Profile & Repositories via API (live/offline resilient)
+                                                                                     
             github_profile_data = None
             github_repos = []
             username = None
@@ -488,14 +485,14 @@ class CandidatePipeline:
                     github_profile_data = fetch_github_profile(username)
                     github_repos = fetch_github_repos(username)
 
-            # Project Verification: Check if candidate's resume projects are on their GitHub
+                                                                                            
             resume_projects = matching_resume.get("projects", []) if matching_resume else []
             
-            # Match resume projects to GitHub repos if GitHub details are available
+                                                                                   
             has_matching_project = False
             if resume_projects:
                 if username and github_repos:
-                    # Ignore extremely common words that don't differentiate projects
+                                                                                     
                     ignore_words = {"using", "with", "system", "project", "application", "app", "development", "and", "the", "for", "in", "of", "a", "an", "to"}
                     for proj in resume_projects:
                         proj_clean = re.sub(r"[^\w\s]", "", proj.lower()).strip()
@@ -508,7 +505,7 @@ class CandidatePipeline:
                         for repo in github_repos:
                             repo_name = repo["name"].lower()
                             repo_desc = (repo.get("description") or "").lower()
-                            # Match if any significant word of the project is in the repo name or description, or fuzzy match
+                                                                                                                             
                             if any(word in repo_name or word in repo_desc for word in proj_words) or fuzz.partial_ratio(proj_clean, repo_name) >= 80:
                                 has_matching_project = True
                                 break
@@ -516,11 +513,11 @@ class CandidatePipeline:
                             break
                             
                 if not has_matching_project:
-                    # Log a warning instead of neglecting/discarding the candidate entirely.
-                    # This prevents valid candidates from being completely lost due to API limits or minor naming mismatches.
+                                                                                            
+                                                                                                                             
                     print(f"Warning: Resume projects {resume_projects} for candidate {raw_name} were not verified on GitHub (username: {username}).")
 
-            # If GitHub API returned a location, add it to location_vals
+                                                                        
             if github_profile_data and github_profile_data.get("location"):
                 loc_str = github_profile_data["location"].strip()
                 if loc_str and loc_str.lower() not in ["nan", "none", "null"]:
@@ -546,24 +543,24 @@ class CandidatePipeline:
                     "method": "regex"
                 }
 
-            # Resolve values
+                            
             final_name, name_src, name_conf, name_entropy = self.resolve_field("full_name", name_vals, candidate_id)
             final_location, loc_src, loc_conf, loc_entropy = self.resolve_field("location", location_vals, candidate_id)
             final_links, links_src, links_conf, links_entropy = self.resolve_field("links", links_vals, candidate_id)
             
-            # Calculate profile-wide average Shannon Entropy
+                                                            
             entropies = [name_entropy, loc_entropy, links_entropy]
             profile_entropy = round(sum(entropies) / len(entropies), 4)
             
-            # Assemble Skills (merged list with highest confidence)
+                                                                   
             skills_map = {}
-            # Resume skills
+                           
             if matching_resume:
                 for s in matching_resume["skills"]:
                     norm_s = normalize_skill(s)
                     if not norm_s:
                         continue
-                    # Check for fuzzy match in existing keys
+                                                            
                     matched_key = None
                     for existing_key in skills_map:
                         if fuzz.ratio(norm_s, existing_key) >= 90:
@@ -575,25 +572,10 @@ class CandidatePipeline:
                     else:
                         skills_map[norm_s] = {
                             "name": norm_s,
-                            "confidence": 0.56,  # resume + inferred
+                            "confidence": 0.56,                     
                             "sources": ["resume"]
                         }
-            # Add GitHub signals (mock languages)
-            # if matching_github:
-            #     github_skills = ["python", "git"]  # default mock skills
-            #     for s in github_skills:
-            #         norm_s = normalize_skill(s)
-            #         if norm_s in skills_map:
-            #             skills_map[norm_s]["sources"].append("github")
-            #             skills_map[norm_s]["confidence"] = min(skills_map[norm_s]["confidence"] * 1.15, 1.0)
-            #         else:
-            #             skills_map[norm_s] = {
-            #                 "name": norm_s,
-            #                 "confidence": 0.60,
-            #                 "sources": ["github"]
-            #             }
-
-            # Add GitHub signals from repository metadata
+                                                                                                                       
             github_skills = set()
 
             for repo in github_repos:
@@ -615,7 +597,7 @@ class CandidatePipeline:
                 if not norm_s:
                     continue
 
-                # Check for fuzzy match in existing keys
+                                                        
                 matched_key = None
                 for existing_key in skills_map:
                     if fuzz.ratio(norm_s, existing_key) >= 90:
@@ -635,11 +617,11 @@ class CandidatePipeline:
             
             final_skills = list(skills_map.values())
 
-            # Experience & Education (mostly from resume)
+                                                         
             final_experience = matching_resume["experience"] if matching_resume else []
             final_education = matching_resume["education"] if matching_resume else []
             
-            # ─── Calculate Profile Freshness ───
+                                                 
             freshness_years = []
             if matching_resume:
                 for exp in matching_resume.get("experience", []):
@@ -663,19 +645,19 @@ class CandidatePipeline:
             else:
                 freshness = 0.35
 
-            # ─── Perform Job Description (JD) Matching ───
+                                                           
             jd_match_score = None
             if self.job_description:
                 candidate_skills_set = {s["name"].lower() for s in final_skills}
                 jd_text_lower = self.job_description.lower()
                 jd_skills = set()
                 
-                # Scan against COMMON_SKILLS_DB and candidate's own skills
+                                                                          
                 all_possible_skills = COMMON_SKILLS_DB.union(candidate_skills_set)
                 
                 for skill in all_possible_skills:
                     skill_lower = skill.lower()
-                    # Handle special characters (e.g., c++, c#, node.js) safely
+                                                                               
                     if any(char in skill_lower for char in [".", "+", "#", "/"]):
                         pattern = r'(?:^|[^a-zA-Z0-9_])' + re.escape(skill_lower) + r'(?:$|[^a-zA-Z0-9_])'
                     else:
@@ -684,7 +666,7 @@ class CandidatePipeline:
                     if re.search(pattern, jd_text_lower):
                         jd_skills.add(normalize_skill(skill))
                         
-                # Fallback to substring matching if no skills were matched with boundaries
+                                                                                          
                 if not jd_skills:
                     for skill in all_possible_skills:
                         if skill.lower() in jd_text_lower:
@@ -692,7 +674,7 @@ class CandidatePipeline:
                             
                 jd_match_score = GithubResumeMatcher.calculate_dice_coefficient(candidate_skills_set, jd_skills)
 
-            # ─── Side-by-Side Source Comparison ───
+                                                    
             final_phone = all_phones[0] if all_phones else None
             final_title = "Software Engineer" if matching_resume else None
             
@@ -724,7 +706,7 @@ class CandidatePipeline:
                 }
             }
             
-            # Run Advanced Matcher
+                                  
             match_details_dict = None
             overall_conf = None
             if matching_resume and (username or matching_github):
@@ -754,7 +736,7 @@ class CandidatePipeline:
                     repos=repo_list
                 )
                 
-                # Determine job title from Recruiter CSV if available
+                                                                     
                 title_col = next((c for c in recruiter_df.columns if "title" in c.lower() or "role" in c.lower()), None)
                 csv_title = clean_val(row[title_col]) if title_col else "Software Engineer"
 
@@ -763,7 +745,7 @@ class CandidatePipeline:
                 match_details_dict = match_report.model_dump()
                 overall_conf = match_report.overall_score
             
-            # Base Canonical Record
+                                   
             canonical_record = {
                 "candidate_id": candidate_id,
                 "full_name": final_name,
@@ -839,7 +821,7 @@ class CandidatePipeline:
                 )
             }
             
-            # Merge all other columns from the recruiter CSV row
+                                                                
             for col in recruiter_df.columns:
                 cleaned_col = col.strip()
                 if cleaned_col not in canonical_record:
@@ -847,7 +829,7 @@ class CandidatePipeline:
                 if cleaned_col.lower() not in canonical_record:
                     canonical_record[cleaned_col.lower()] = clean_val(row[col])
 
-            # Merge all other columns from the matched GitHub CSV row
+                                                                     
             if matching_github and "raw_row" in matching_github:
                 for col, val in matching_github["raw_row"].items():
                     cleaned_col = col.strip()
@@ -856,7 +838,7 @@ class CandidatePipeline:
                     if cleaned_col.lower() not in canonical_record:
                         canonical_record[cleaned_col.lower()] = clean_val(val)
 
-            # Project using config
+                                  
             projected = self.project_record(canonical_record)
             final_profiles.append(projected)
             raw_profiles.append(canonical_record)
@@ -880,7 +862,7 @@ class CandidatePipeline:
             if field.get("required") is False:
                 continue
             path = field["path"]
-            # Handle basic path resolution
+                                          
             val = None
             if "." in path:
                 parts = path.split(".")
@@ -891,11 +873,11 @@ class CandidatePipeline:
                 val = curr
             else:
                 val = record.get(path)
-                # Try case-insensitive matching if not found
+                                                            
                 if val is None:
                     val = record.get(path.lower())
                     
-            # Smart Fallbacks for flat custom fields:
+                                                     
             if val is None:
                 if path in ["github_url", "github"]:
                     val = record.get("links", {}).get("github")
@@ -914,7 +896,7 @@ class CandidatePipeline:
                 elif path in ["phone", "mobile"]:
                     val = record["phones"][0] if record.get("phones") else None
                 
-            # Handle on missing policy
+                                      
             if val is None or val == "" or val == [] or val == {}:
                 if on_missing == "null":
                     val = "N/A"
@@ -924,11 +906,11 @@ class CandidatePipeline:
                     raise ValueError(f"Missing required field: {path}")
                     
             if include_confidence and path not in ["candidate_id", "overall_confidence", "provenance"]:
-                # Wrap with confidence/source metadata
+                                                      
                 source = "merged"
                 confidence = record["overall_confidence"]
                 
-                # Deduce source from provenance
+                                               
                 prov_entry = next((p for p in record["provenance"] if p["field"] == path), None)
                 if prov_entry:
                     source = prov_entry["source"]

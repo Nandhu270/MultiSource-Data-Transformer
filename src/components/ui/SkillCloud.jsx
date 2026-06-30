@@ -10,7 +10,7 @@ const sourceGlowColors = {
 export default function SkillCloud({ skills }) {
   if (!skills || skills.length === 0) return null;
 
-  // Sort by confidence desc, then multi-source first
+  
   const sorted = [...skills].sort((a, b) => {
     const multiA = a.sources.length > 1 ? 1 : 0;
     const multiB = b.sources.length > 1 ? 1 : 0;
@@ -28,7 +28,7 @@ export default function SkillCloud({ skills }) {
         const isMultiSource = skill.sources.length > 1;
         const primarySource = skill.sources[0];
 
-        // Size based on confidence
+        
         const fontSize = skill.confidence > 0.9 ? 'var(--text-sm)' : 'var(--text-xs)';
         const padding = skill.confidence > 0.9 ? 'var(--space-2) var(--space-4)' : 'var(--space-1) var(--space-3)';
 
@@ -57,14 +57,14 @@ export default function SkillCloud({ skills }) {
               position: 'relative',
             }}
           >
-            {/* Skill name */}
+            {}
             <span style={{
               textTransform: 'capitalize',
             }}>
               {skill.value}
             </span>
 
-            {/* Source indicators */}
+            {}
             <div style={{
               display: 'flex',
               gap: '2px',
@@ -88,7 +88,7 @@ export default function SkillCloud({ skills }) {
               ))}
             </div>
 
-            {/* Multi-source glow ring */}
+            {}
             {isMultiSource && (
               <div style={{
                 position: 'absolute',
