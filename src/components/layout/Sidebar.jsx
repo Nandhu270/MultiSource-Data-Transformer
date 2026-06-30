@@ -8,9 +8,9 @@ import {
 import { usePipeline } from '../../context/PipelineContext';
 
 const navItems = [
-  { path: '/', icon: Upload, label: 'Upload Sources' },
+  { path: '/', icon: Settings, label: 'Configuration' },
+  { path: '/upload', icon: Upload, label: 'Upload Sources' },
   { path: '/results', icon: FileOutput, label: 'Results' },
-  { path: '/config', icon: Settings, label: 'Configuration' },
 ];
 
 export default function Sidebar({ collapsed, onToggle }) {

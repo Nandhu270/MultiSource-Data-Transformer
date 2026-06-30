@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
   Settings, Plus, Trash2, GripVertical,
   Eye, EyeOff, Code2, ToggleLeft, ToggleRight,
-  Save, RotateCcw, Check, AlertCircle
+  Save, RotateCcw, Check, AlertCircle, ArrowRight
 } from 'lucide-react';
 import { usePipeline } from '../context/PipelineContext';
 import { configPresets } from '../data/mockData';
@@ -14,6 +15,7 @@ const normalizeOptions = ['none', 'E164', 'canonical', 'ISO8601'];
 const onMissingOptions = ['null', 'omit', 'error'];
 
 export default function ConfigEditor() {
+  const navigate = useNavigate();
   const { state, dispatch } = usePipeline();
   const [config, setConfig] = useState(state.customConfig);
   const [showPreview, setShowPreview] = useState(true);
@@ -103,6 +105,10 @@ export default function ConfigEditor() {
           <button onClick={handleSave} className="btn-primary" disabled={validationErrors.length > 0}>
             {saved ? <Check size={16} /> : <Save size={16} />}
             {saved ? 'Saved!' : 'Save Config'}
+          </button>
+          <button onClick={() => navigate('/upload')} className="btn-primary" style={{ background: 'var(--gradient-secondary)' }}>
+            <ArrowRight size={16} />
+            Proceed to Upload
           </button>
         </div>
       </motion.div>
@@ -226,11 +232,11 @@ export default function ConfigEditor() {
 
                 {/* Required toggle */}
                 <button
-                  onClick={() => updateField(index, 'required', !field.required)}
-                  title={field.required ? 'Required' : 'Optional'}
+                  onClick={() => updateField(index, 'required', field.required === false ? true : false)}
+                  title={field.required !== false ? 'Required' : 'Optional'}
                   style={{ flexShrink: 0 }}
                 >
-                  {field.required ? (
+                  {field.required !== false ? (
                     <ToggleRight size={20} color="var(--accent-violet)" />
                   ) : (
                     <ToggleLeft size={20} color="var(--text-muted)" />

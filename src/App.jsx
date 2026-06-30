@@ -25,9 +25,9 @@ function App() {
             <Header />
             <div className="page-content">
               <Routes>
-                <Route path="/" element={<UploadSources />} />
+                <Route path="/" element={<ConfigEditor />} />
+                <Route path="/upload" element={<UploadSources />} />
                 <Route path="/results" element={<Results />} />
-                <Route path="/config" element={<ConfigEditor />} />
               </Routes>
             </div>
           </div>

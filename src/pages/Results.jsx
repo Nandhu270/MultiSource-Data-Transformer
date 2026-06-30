@@ -55,10 +55,16 @@ export default function Results() {
     return parts.join(', ') || 'No location mentioned';
   };
 
-  // Resolve complete profile details matching selected candidate ID
-  const completeCandidate = (state.results.completeCandidates || []).find(
-    c => getCid(c) === getCid(selectedCandidate)
-  ) || selectedCandidate;
+  // We now render strictly from the projected selectedCandidate containing only configured fields
+  const completeCandidate = selectedCandidate;
+
+  // Helper to check if a field path is present and enabled in the configuration schema
+  const hasField = (fieldPrefix) => {
+    if (!state.customConfig || !state.customConfig.fields) return true; // fallback to show all
+    return state.customConfig.fields.some(f => 
+      f.required !== false && (f.path === fieldPrefix || f.path.startsWith(fieldPrefix + '.'))
+    );
+  };
 
   const handleDownload = () => {
     const blob = new Blob([JSON.stringify(outputJSON, null, 2)], { type: 'application/json' });
@@ -105,7 +111,7 @@ export default function Results() {
         <p style={{ fontSize: 'var(--text-base)', color: 'var(--text-secondary)', maxWidth: '450px', marginBottom: 'var(--space-4)' }}>
           Please upload your Recruiter CSV, GitHub CSV, and Candidate Resumes to run the transformer pipeline.
         </p>
-        <button onClick={() => navigate('/')} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+        <button onClick={() => navigate('/upload')} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
           <Play size={16} />
           Upload Files and Run
         </button>
@@ -146,7 +152,7 @@ export default function Results() {
         <p style={{ fontSize: 'var(--text-base)', color: 'var(--text-secondary)', maxWidth: '450px', marginBottom: 'var(--space-4)' }}>
           The pipeline completed successfully, but no candidate profiles could be merged. Please verify that the names or emails in your Recruiter CSV match those in your Resumes or GitHub CSV.
         </p>
-        <button onClick={() => navigate('/')} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+        <button onClick={() => navigate('/upload')} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
           <Play size={16} />
           Upload Files and Try Again
         </button>
@@ -374,15 +380,16 @@ export default function Results() {
                 </div>
 
                 {/* Core parameters */}
-                <FieldRow icon={Mail} label="Email list" value={unwrap(completeCandidate.emails)?.join(', ')} />
-                <FieldRow icon={Phone} label="Phone numbers" value={unwrap(completeCandidate.phones)?.join(', ')} />
-                <FieldRow icon={MapPin} label="Location coordinates" value={getFormattedLocation(completeCandidate.location)} />
-                <FieldRow icon={Clock} label="Total Experience" value={
+                {hasField('full_name') && <FieldRow icon={User} label="Full Name" value={unwrap(completeCandidate.full_name)} />}
+                {hasField('emails') && <FieldRow icon={Mail} label="Email list" value={Array.isArray(unwrap(completeCandidate.emails)) ? unwrap(completeCandidate.emails).join(', ') : unwrap(completeCandidate.emails)} />}
+                {hasField('phones') && <FieldRow icon={Phone} label="Phone numbers" value={Array.isArray(unwrap(completeCandidate.phones)) ? unwrap(completeCandidate.phones).join(', ') : unwrap(completeCandidate.phones)} />}
+                {hasField('location') && <FieldRow icon={MapPin} label="Location coordinates" value={getFormattedLocation(completeCandidate.location)} />}
+                {hasField('years_experience') && <FieldRow icon={Clock} label="Total Experience" value={
                   unwrap(completeCandidate.years_experience) ? `${unwrap(completeCandidate.years_experience)} years` : 'N/A'
-                } />
+                } />}
 
                 {/* Portfolio/Links */}
-                {unwrap(completeCandidate.links) && (
+                {hasField('links') && unwrap(completeCandidate.links) && (
                   <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--border-subtle)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
                       <Link2 size={16} color="var(--text-muted)" />
@@ -422,7 +429,7 @@ export default function Results() {
               </div>
 
               {/* Advanced Match Details Card */}
-              {unwrap(completeCandidate.match_details) && (
+              {hasField('skills') && unwrap(completeCandidate.match_details) && (
                 <div className="glass-card-static" style={{ padding: 'var(--space-6)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
@@ -617,7 +624,7 @@ export default function Results() {
               )}
 
               {/* Education */}
-              {unwrap(completeCandidate.education) && (
+              {hasField('education') && Array.isArray(unwrap(completeCandidate.education)) && (
                 <div className="glass-card-static" style={{ padding: 'var(--space-6)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
                     <GraduationCap size={18} color="var(--accent-blue)" />
@@ -640,7 +647,7 @@ export default function Results() {
               )}
 
               {/* Provenance */}
-              {unwrap(completeCandidate.provenance) && (
+              {Array.isArray(unwrap(completeCandidate.provenance)) && (
                 <div className="glass-card-static" style={{ padding: 'var(--space-6)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
                     <Shield size={18} color="var(--accent-violet)" />
@@ -669,7 +676,7 @@ export default function Results() {
             {/* Right Column: Skills & Experience */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
               {/* Skills cloud */}
-              {unwrap(completeCandidate.skills) && (
+              {hasField('skills') && Array.isArray(unwrap(completeCandidate.skills)) && (
                 <div className="glass-card-static" style={{ padding: 'var(--space-6)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
                     <Code2 size={18} color="var(--accent-violet)" />
@@ -687,7 +694,7 @@ export default function Results() {
               )}
 
               {/* Experience */}
-              {unwrap(completeCandidate.experience) && (
+              {hasField('experience') && Array.isArray(unwrap(completeCandidate.experience)) && (
                 <div className="glass-card-static" style={{ padding: 'var(--space-6)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-5)' }}>
                     <Award size={18} color="var(--accent-cyan)" />
@@ -707,34 +714,7 @@ export default function Results() {
                 </div>
               )}
 
-              {/* GitHub Repositories */}
-              {unwrap(completeCandidate.github_repos) && unwrap(completeCandidate.github_repos).length > 0 && (
-                <div className="glass-card-static" style={{ padding: 'var(--space-6)', marginTop: 'var(--space-6)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
-                    <GithubIcon size={18} color="var(--accent-purple)" />
-                    <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700 }}>GitHub Repositories</h3>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                    {unwrap(completeCandidate.github_repos).map((repo, i) => (
-                      <div key={i} style={{
-                        padding: 'var(--space-3)',
-                        background: 'rgba(168, 85, 247, 0.03)',
-                        border: '1px solid rgba(168, 85, 247, 0.1)',
-                        borderRadius: 'var(--radius-md)',
-                      }}>
-                        <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
-                          {repo.name}
-                        </div>
-                        {repo.description && (
-                          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                            {repo.description}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+
             </div>
           </div>
 
