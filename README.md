@@ -69,7 +69,7 @@ The frontend is a modern React application optimized with Vite:
 
 ---
 
-## ⚡ Key Features
+##  Key Features
 
 *   **Multi-Source Extraction**: Seamlessly extracts and aligns fields from unstructured PDFs/DOCX and structured tables.
 *   **Conflict Resolution Engine**: Resolves contradicting contact information, locations, or names using configurable source weights, method weights, and corroboration boosts.
@@ -80,7 +80,7 @@ The frontend is a modern React application optimized with Vite:
 
 ---
 
-## 🧮 Core Algorithms & Mathematical Logic
+## Core Algorithms & Mathematical Logic
 
 The candidate transformer incorporates several mathematical, probabilistic, and string similarity algorithms to verify data correctness and reasoning.
 
@@ -137,7 +137,7 @@ Resolves conflicts on profile details using configurable source priorities (`SOU
 
 ---
 
-## 🧮 Candidate Scoring Engine (GitHub Route vs Fallback)
+## Candidate Scoring Engine (GitHub Route vs Fallback)
 
 ### Route A: GitHub Profile Present
 When a public GitHub profile matches a candidate, the confidence and match ratings are computed as follows:
@@ -158,7 +158,7 @@ $$\text{Fallback Confidence} = \min \left( \frac{C_{\text{name}} + C_{\text{loc}
 
 ---
 
-## 🚀 How to Run the Project
+## How to Run the Project
 
 ### Prerequisites
 *   **Python 3.10+** (tested on 3.12)
@@ -227,19 +227,26 @@ To verify the mathematical correctness, matcher scoring, normalizers, and parsin
 
 ## Output
 
+
 <img width="1917" height="1073" alt="Screenshot 2026-07-01 020220" src="https://github.com/user-attachments/assets/eee440ba-385f-4960-80d2-fca7332a7a68" />
+
 
 <img width="1918" height="1078" alt="Screenshot 2026-07-01 020249" src="https://github.com/user-attachments/assets/83eda972-6093-4b48-aa4a-0741e5fa9837" />
 
+
 <img width="1917" height="1077" alt="Screenshot 2026-07-01 020256" src="https://github.com/user-attachments/assets/005834d4-fc0a-43a7-982a-b6317b3e16aa" />
+
 
 <img width="1917" height="1077" alt="Screenshot 2026-07-01 020325" src="https://github.com/user-attachments/assets/d6a1e445-0f22-484d-8048-7320ea422937" />
 
+
 <img width="1918" height="1078" alt="Screenshot 2026-07-01 020338" src="https://github.com/user-attachments/assets/3e156e41-ae28-4bde-8eee-324fa8620973" />
+
 
 ---
 
 ## Demo Video
+
 
 https://github.com/user-attachments/assets/8b710e75-2901-424d-9ad7-ae543f8f9fdb
 
