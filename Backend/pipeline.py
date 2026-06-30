@@ -588,7 +588,7 @@ class CandidatePipeline:
                 "location": final_location or {"city": "", "region": "", "country": ""},
                 "links": final_links or {"linkedin": None, "github": None, "portfolio": None, "other": []},
                 "headline": "Software Engineer" if matching_resume else None,
-                "years_experience": len(final_experience) * 2 if final_experience else 0,
+                "years_experience": len(final_experience) if final_experience else 0,
                 "skills": final_skills,
                 "experience": final_experience,
                 "education": final_education,

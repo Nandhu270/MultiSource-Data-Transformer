@@ -82,28 +82,18 @@ def normalize_education(line: str) -> dict:
     line_clean = line.strip()
     
     # 1. Extract Degree
-    degree = "Bachelor's Degree"
-    if re.search(r"\bb\.?\s*tech\b|\bbachelor\s+of\s+technology\b", line_clean, re.IGNORECASE):
+    degree = ""
+    if re.search(r"\bhsc\b|higher\s+secondary", line_clean, re.IGNORECASE):
+        degree = "Higher Secondary"
+    elif re.search(r"\bsslc\b|secondary\s+school", line_clean, re.IGNORECASE):
+        degree = "Secondary School"
+    elif re.search(r"\bb\.?\s*tech\b|\bbachelor\s+of\s+technology\b", line_clean, re.IGNORECASE):
         degree = "B.Tech"
     elif re.search(r"\bb\.?\s*e\.?\b|\bbachelor\s+of\s+engineering\b", line_clean, re.IGNORECASE):
         degree = "B.E."
-    elif re.search(r"\bm\.?\s*tech\b|\bmaster\s+of\s+technology\b", line_clean, re.IGNORECASE):
-        degree = "M.Tech"
-    elif re.search(r"\bm\.?\s*e\.?\b|\bmaster\s+of\s+engineering\b", line_clean, re.IGNORECASE):
-        degree = "M.E."
-    elif re.search(r"\bb\.?\s*sc\b|\bbachelor\s+of\s+science\b", line_clean, re.IGNORECASE):
-        degree = "B.Sc"
-    elif re.search(r"\bm\.?\s*sc\b|\bmaster\s+of\s+science\b", line_clean, re.IGNORECASE):
-        degree = "M.Sc"
-    elif re.search(r"\bbca\b", line_clean, re.IGNORECASE):
-        degree = "BCA"
-    elif re.search(r"\bmca\b", line_clean, re.IGNORECASE):
-        degree = "MCA"
-    elif re.search(r"\bph\.?d\b", line_clean, re.IGNORECASE):
-        degree = "Ph.D"
         
     # 2. Extract Field
-    field = "Computer Science"
+    field = ""
     if re.search(r"\bcomputer\s+science\b|\bcs\b|\bcse\b", line_clean, re.IGNORECASE):
         field = "Computer Science"
     elif re.search(r"\binformation\s+technology\b|\bit\b", line_clean, re.IGNORECASE):
@@ -115,7 +105,7 @@ def normalize_education(line: str) -> dict:
         
     # 3. Extract Year (Prefer the last 4-digit year in range)
     years = re.findall(r"\b(20\d{2}|19\d{2})\b", line_clean)
-    end_year = int(years[-1]) if years else 2020
+    end_year = int(years[-1]) if years else None
     
     # 4. Clean Institution Name
     inst = line_clean

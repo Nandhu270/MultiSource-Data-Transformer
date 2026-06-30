@@ -7,9 +7,10 @@ import docx
 EMAIL_REGEX = re.compile(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+")
 # Highly specific phone regex to avoid matching zip codes, dates, or ID numbers
 PHONE_REGEX = re.compile(r"(?:\+?\d{1,3}[-.\s]?)?\(?[6-9]\d{2}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b|\+?\d{10,12}\b")
-LINKEDIN_REGEX = re.compile(r"(?:https?://)?(?:www\.)?linkedin\.com/in/[a-zA-Z0-9-_/]+", re.IGNORECASE)
-GITHUB_REGEX = re.compile(r"(?:https?://)?(?:www\.)?github\.com/[a-zA-Z0-9-_/]+", re.IGNORECASE)
-
+# LINKEDIN_REGEX = re.compile(r"(?:https?://)?(?:www\.)?linkedin\.com/in/[a-zA-Z0-9-_/]+", re.IGNORECASE)
+# GITHUB_REGEX = re.compile(r"(?:https?://)?(?:www\.)?github\.com/[a-zA-Z0-9-_/]+", re.IGNORECASE)
+LINKEDIN_REGEX = re.compile(r"(?:https?://)?(?:www\.)?linkedin\.com/in/[a-zA-Z0-9-_%]+/?", re.IGNORECASE)
+GITHUB_REGEX = re.compile(r"(?:https?://)?(?:www\.)?github\.com/[a-zA-Z0-9-]+/?", re.IGNORECASE)
 # Expanded list of modern software engineering, web dev, and data science skills
 KNOWN_SKILLS = [
     "python", "javascript", "typescript", "react", "node.js", "node", "postgresql", "postgres",
@@ -26,7 +27,6 @@ KNOWN_SKILLS = [
 ]
 
 def extract_text_from_pdf(file_path: str) -> str:
-    """Extract all text from a PDF file."""
     text = ""
     try:
         with pdfplumber.open(file_path) as pdf:
@@ -34,17 +34,27 @@ def extract_text_from_pdf(file_path: str) -> str:
                 page_text = page.extract_text()
                 if page_text:
                     text += page_text + "\n"
+
+                for link in getattr(page, "hyperlinks", []):
+                    uri = link.get("uri")
+                    if uri:
+                        text += uri + "\n"
     except Exception as e:
         print(f"Error reading PDF {file_path}: {e}")
     return text
 
 def extract_text_from_docx(file_path: str) -> str:
-    """Extract all text from a DOCX file."""
     text = ""
     try:
         doc = docx.Document(file_path)
+
         for para in doc.paragraphs:
             text += para.text + "\n"
+
+        for rel in doc.part.rels.values():
+            if "hyperlink" in rel.reltype:
+                text += rel.target_ref + "\n"
+
     except Exception as e:
         print(f"Error reading DOCX {file_path}: {e}")
     return text
@@ -195,7 +205,8 @@ def extract_experience_sections(text: str) -> list:
         line_lower = line_clean.lower()
         
         # Determine if it's a job header
-        has_title = any(r"\b" + re.escape(title) + r"\b" in line_lower for title in job_titles)
+        # has_title = any(r"\b" + re.escape(title) + r"\b" in line_lower for title in job_titles)
+        has_title = any(re.search(r"\b" + re.escape(title) + r"\b", line_lower)for title in job_titles)
         has_date = len(date_pattern.findall(line_clean)) >= 1 or "present" in line_lower
         
         # A strong indicator of a job header: has a job title AND (has a date OR has separator like at, @, -, |)
@@ -217,8 +228,10 @@ def extract_experience_sections(text: str) -> list:
                     p1 = parts[1].strip()
                     
                     # Smart title-vs-company detection based on title keywords
-                    p0_has_title = any(r"\b" + re.escape(t) + r"\b" in p0.lower() for t in job_titles)
-                    p1_has_title = any(r"\b" + re.escape(t) + r"\b" in p1.lower() for t in job_titles)
+                    # p0_has_title = any(r"\b" + re.escape(t) + r"\b" in p0.lower() for t in job_titles)
+                    # p1_has_title = any(r"\b" + re.escape(t) + r"\b" in p1.lower() for t in job_titles)
+                    p0_has_title = any(re.search(r"\b" + re.escape(t) + r"\b", p0.lower())for t in job_titles)
+                    p1_has_title = any(re.search(r"\b" + re.escape(t) + r"\b", p1.lower())for t in job_titles)
                     
                     if p1_has_title and not p0_has_title:
                         title = p1
@@ -280,6 +293,10 @@ def extract_education_sections(text: str) -> list:
     Robust extraction of education details from the resume.
     Locates the education section, groups related lines, and extracts degree, field, institution, and year.
     """
+    skip_keywords = [
+    "@", "linkedin", "github", "email", "phone", "mobile",
+    "examination", "university institute year"
+]
     from normalizer import normalize_education
     lines = [line.strip() for line in text.split("\n")]
     
@@ -313,6 +330,10 @@ def extract_education_sections(text: str) -> list:
     i = 0
     while i < len(edu_lines):
         line = edu_lines[i].strip()
+        line_lower = line.lower()
+        if any(k in line_lower for k in skip_keywords):
+            i += 1
+            continue
         if not line:
             i += 1
             continue
