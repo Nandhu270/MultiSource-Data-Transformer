@@ -11,20 +11,7 @@ PHONE_REGEX = re.compile(r"(?:\+?\d{1,3}[-.\s]?)?\(?[6-9]\d{2}\)?[-.\s]?\d{3}[-.
 # GITHUB_REGEX = re.compile(r"(?:https?://)?(?:www\.)?github\.com/[a-zA-Z0-9-_/]+", re.IGNORECASE)
 LINKEDIN_REGEX = re.compile(r"(?:https?://)?(?:www\.)?linkedin\.com/in/[a-zA-Z0-9-_%]+/?", re.IGNORECASE)
 GITHUB_REGEX = re.compile(r"(?:https?://)?(?:www\.)?github\.com/[a-zA-Z0-9-]+/?", re.IGNORECASE)
-# Expanded list of modern software engineering, web dev, and data science skills
-KNOWN_SKILLS = [
-    "python", "javascript", "typescript", "react", "node.js", "node", "postgresql", "postgres",
-    "docker", "kubernetes", "aws", "django", "flask", "git", "redis", "graphql", "go", "golang",
-    "css", "html", "next.js", "redux", "sql", "nosql", "mongodb", "java", "c++", "ruby",
-    "c", "c#", "net", "php", "laravel", "spring", "spring boot", "hibernate", "angular", "vue",
-    "jquery", "bootstrap", "tailwind", "sass", "less", "mysql", "sqlite", "oracle", "mariadb",
-    "firebase", "dynamodb", "cassandra", "elasticsearch", "jenkins", "gitlab", "github", "bitbucket",
-    "terraform", "ansible", "puppet", "chef", "heroku", "digitalocean", "gcp", "azure",
-    "machine learning", "deep learning", "artificial intelligence", "ai", "ml", "nlp", "computer vision",
-    "tensorflow", "pytorch", "keras", "scikit-learn", "sklearn", "pandas", "numpy", "scipy",
-    "matplotlib", "seaborn", "tableau", "power bi", "spark", "hadoop", "kafka", "rabbit-mq",
-    "rest api", "restful", "soap", "microservices", "agile", "scrum", "jira", "figma", "canva"
-]
+# Regex patterns for contact information
 
 def extract_text_from_pdf(file_path: str) -> str:
     text = ""
@@ -128,15 +115,91 @@ def parse_contact_info(text: str) -> dict:
     }
 
 def extract_skills(text: str) -> list:
-    """Find known skills mentioned in the text."""
-    text_lower = text.lower()
-    found_skills = []
-    for skill in KNOWN_SKILLS:
-        # Use word boundary to avoid partial matches (e.g. 'go' in 'google')
-        pattern = r"\b" + re.escape(skill) + r"\b"
-        if re.search(pattern, text_lower):
-            found_skills.append(skill)
-    return found_skills
+    """
+    Dynamically extract skills from the resume text.
+    Locates the Skills section, splits the content, and cleans the tokens.
+    """
+    lines = [line.strip() for line in text.split("\n")]
+    skills_start_idx = -1
+    skills_headers = ["skills", "technical skills", "technologies", "core competencies", "skills & tools", "areas of expertise", "it skills"]
+    next_section_headers = ["experience", "employment", "work history", "education", "projects", "links", "languages", "interests", "certifications", "activities", "awards"]
+    
+    for i, line in enumerate(lines):
+        line_lower = line.lower()
+        if any(h in line_lower for h in skills_headers):
+            if len(line) < 30:
+                skills_start_idx = i
+                break
+                
+    skills_lines = []
+    if skills_start_idx != -1:
+        for line in lines[skills_start_idx + 1:]:
+            line_lower = line.lower()
+            if any(h in line_lower for h in next_section_headers):
+                if len(line) < 40:
+                    break
+            skills_lines.append(line)
+    else:
+        # Scan for lines that look like lists of skills (multiple commas/semicolons)
+        for line in lines:
+            line_clean = line.strip()
+            if line_clean.count(",") >= 2 or line_clean.count(";") >= 2:
+                skills_lines.append(line)
+
+    extracted_skills = []
+    ignore_words = {
+        "and", "the", "for", "with", "using", "from", "to", "skills", "technical", "technologies", "tools",
+        "internship", "intern", "rest", "and rest", "responsive", "built responsive", "strong",
+        "demonstrating", "demonstrating strong", "while", "initiative", "solutions", "pvt", "ltd", "pvt.ltd",
+        "learning", "basic", "intermediate", "advanced", "expert", "level", "knowledge", "understanding",
+        "exposure", "experience", "etc", "hands-on", "hands on"
+    }
+    
+    for line in skills_lines:
+        line_clean = line.strip()
+        if not line_clean:
+            continue
+            
+        # Clean bullet points
+        line_clean = re.sub(r"^[-*•o+\d\.\s]+", "", line_clean)
+        
+        # Split by comma, semicolon, or vertical bar
+        parts = re.split(r"[,;|]|\s{2,}", line_clean)
+        for part in parts:
+            part_clean = part.strip()
+            
+            # Clean prefixes like "languages:", "developer tools:", "databases:", etc.
+            part_clean = re.sub(r"^(languages|developer tools|databases|database|tools|frameworks|libraries|other)\s*:\s*", "", part_clean, flags=re.IGNORECASE).strip()
+            
+            # Remove parenthetical notes like (basic), (intermediate), (advanced), (expert)
+            part_clean = re.sub(r"\(.*?\)", "", part_clean).strip()
+            
+            # Remove trailing/leading punctuation
+            part_clean = re.sub(r"^[^\w+]+|[^\w+]+$", "", part_clean)
+            
+            if not part_clean or len(part_clean) < 2 or len(part_clean) > 30:
+                continue
+                
+            part_lower = part_clean.lower()
+            if len(part_clean.split()) > 4:
+                continue
+            if part_lower in ignore_words:
+                continue
+            if any(w in part_lower for w in ["pvt", "ltd", "solutions", "internship", "intern", "developer intern", "demonstrating", "responsive"]):
+                continue
+                
+            extracted_skills.append(part_clean)
+            
+    # Deduplicate preserving order
+    seen = set()
+    unique_skills = []
+    for s in extracted_skills:
+        s_lower = s.lower()
+        if s_lower not in seen:
+            seen.add(s_lower)
+            unique_skills.append(s)
+            
+    return unique_skills
 
 def extract_experience_sections(text: str) -> list:
     """
@@ -243,7 +306,7 @@ def extract_experience_sections(text: str) -> list:
             
             # Remove dates from title/company if they were in the header line
             dates_found = date_pattern.findall(line_clean)
-            start_date = "2020-01"
+            start_date = None
             end_date = None
             
             if dates_found:
@@ -268,12 +331,12 @@ def extract_experience_sections(text: str) -> list:
             company = re.sub(r"^\s*[-|@]\s*", "", company).strip()
             
             from normalizer import normalize_date
-            normalized_start = normalize_date(start_date)
+            normalized_start = normalize_date(start_date) if start_date else ""
             normalized_end = normalize_date(end_date) if end_date else None
             
             current_block = {
-                "company": company if company else "Company",
-                "title": title if title else "Software Engineer",
+                "company": company if company else None,
+                "title": title if title else None,
                 "start": normalized_start,
                 "end": normalized_end,
                 "summary": ""
@@ -370,85 +433,104 @@ def extract_education_sections(text: str) -> list:
     return education
 
 def extract_location(text: str) -> dict:
-    """Scan the first 20 lines of resume text for city names and patterns to find personal location."""
-    lines = text.split("\n")[:20]
-    header_text = "\n".join(lines).lower()
+    """
+    Scan the first 20 lines of resume text for location patterns (e.g. "City, State", "City, Country").
+    Uses purely rule-based regex patterns.
+    """
+    lines = [line.strip() for line in text.split("\n")[:20] if line.strip()]
     
-    # Extensive list of common cities (focusing on Indian hubs & international tech cities)
-    cities = [
-        "bengaluru", "bangalore", "pune", "mumbai", "delhi", "noida", "gurugram", "gurgaon", 
-        "hyderabad", "chennai", "coimbatore", "kolkata", "dindigul", "dindugul", "madurai", 
-        "trichy", "tiruppur", "salem", "vellore", "erode", "tirunelveli", "thanjavur", 
-        "san francisco", "london", "new york", "austin", "seattle"
-    ]
+    # Pattern 1: "City, State/Country" (e.g., "Bengaluru, Karnataka", "Chennai, India", "Austin, TX")
+    loc_pattern = re.compile(
+        r"\b([A-Z][a-zA-Z\s]{2,19})\s*,\s*([A-Z][a-zA-Z\s]{2,19}|[A-Z]{2})\b"
+    )
     
-    # 1. Try exact keyword matching
-    for city in cities:
-        pattern = r"\b" + re.escape(city) + r"\b"
-        if re.search(pattern, header_text):
-            normalized_city = city.title()
-            if city in ["bangalore", "bengaluru"]:
-                normalized_city = "Bengaluru"
-            elif city in ["gurgaon", "gurugram"]:
-                normalized_city = "Gurugram"
-            elif city in ["dindigul", "dindugul"]:
-                normalized_city = "Dindigul"
+    for line in lines:
+        match = loc_pattern.search(line)
+        if match:
+            city = match.group(1).strip()
+            region_or_country = match.group(2).strip()
             
-            country = "US" if city in ["san francisco", "new york", "austin", "seattle"] else ("UK" if city == "london" else "IN")
+            # Determine country
+            country = "IN"
+            if region_or_country.upper() in ["US", "USA", "UNITED STATES"]:
+                country = "US"
+            elif region_or_country.upper() in ["UK", "UNITED KINGDOM"]:
+                country = "UK"
+            elif len(region_or_country) == 2 and region_or_country.isupper():
+                country = "US"
+                
             return {
-                "city": normalized_city,
-                "region": "",
+                "city": city,
+                "region": region_or_country if len(region_or_country) > 2 else "",
                 "country": country
             }
             
-    # 2. Try regex pattern matching for "City, State" or "City, Country"
-    loc_match = re.search(r"\b([a-zA-Z\s]{3,20})\s*,\s*(?:tamil\s*nadu|karnataka|maharashtra|kerala|andhra\s*pradesh|telangana|india|in)\b", header_text, re.IGNORECASE)
-    if loc_match:
-        city = loc_match.group(1).strip().title()
-        city = re.sub(r"\s+", " ", city)
-        return {
-            "city": city,
-            "region": "",
-            "country": "IN"
-        }
-        
+    # Pattern 2: Single word city name at the end of location line (e.g., "Location: Pune")
+    for line in lines:
+        line_lower = line.lower()
+        if "location" in line_lower or "address" in line_lower or "city" in line_lower:
+            parts = re.split(r"[:\-]", line, 1)
+            if len(parts) > 1:
+                candidate = parts[1].strip()
+                words = candidate.split()
+                if words and len(words) <= 3:
+                    city = " ".join(words)
+                    return {
+                        "city": city,
+                        "region": "",
+                        "country": "IN"
+                    }
+                    
     return None
 
 def extract_projects(text: str) -> list:
-    """Heuristic extraction of project names from the resume text."""
+    """
+    Dynamically extract project names from the resume text.
+    Locates the Projects section and parses project titles from bullet points or headers.
+    """
     projects = []
-    text_lower = text.lower()
+    lines = [line.strip() for line in text.split("\n")]
     
-    # Try to find a projects section
-    proj_idx = text_lower.find("project")
-    if proj_idx != -1:
-        proj_text = text[proj_idx:proj_idx+1000]
-        lines = proj_text.split("\n")[1:]
-        for line in lines:
+    proj_start_idx = -1
+    proj_headers = ["projects", "personal projects", "academic projects", "key projects", "ventures"]
+    next_section_headers = ["education", "experience", "employment", "work history", "skills", "links", "languages", "interests", "certifications", "activities", "awards"]
+    
+    for i, line in enumerate(lines):
+        line_lower = line.lower()
+        if any(line_lower == h or line_lower.startswith(h + " ") or line_lower.startswith(h + ":") for h in proj_headers):
+            if len(line) < 30:
+                proj_start_idx = i
+                break
+                
+    if proj_start_idx != -1:
+        proj_lines = []
+        for line in lines[proj_start_idx + 1:]:
+            line_lower = line.lower()
+            if any(line_lower == h or line_lower.startswith(h + " ") or line_lower.startswith(h + ":") for h in next_section_headers):
+                if len(line) < 30:
+                    break
+            proj_lines.append(line)
+            
+        for line in proj_lines:
             line_clean = line.strip()
             if not line_clean:
                 continue
-            if any(keyword in line_clean.lower() for keyword in ["education", "experience", "work history", "skills", "links", "languages"]):
-                break
             if any(line_clean.startswith(b) for b in ["-", "*", "•", "o"]):
                 line_no_bullet = re.sub(r"^[-*•o\s]+", "", line_clean)
-                words = re.sub(r"[^\w\s-]", "", line_no_bullet).split()
-                if words and len(words) >= 1:
-                    proj_name = " ".join(words[:3]).strip()
+                parts = re.split(r"[:\-–|]", line_no_bullet, 1)
+                proj_candidate = parts[0].strip()
+                words = proj_candidate.split()
+                if 1 <= len(words) <= 5:
+                    proj_name = " ".join(words).strip()
+                    proj_name = re.sub(r"^[^\w+]+|[^\w+]+$", "", proj_name)
                     if len(proj_name) > 3:
                         projects.append(proj_name)
-            elif len(line_clean) < 50 and any(c.isupper() for c in line_clean):
-                words = re.sub(r"[^\w\s-]", "", line_clean).split()
-                if words and len(words) >= 1:
-                    proj_name = " ".join(words[:3]).strip()
+            elif len(line_clean) < 60 and any(c.isupper() for c in line_clean):
+                words = line_clean.split()
+                if 1 <= len(words) <= 5 and all(w[0].isupper() for w in words if w and w[0].isalpha()):
+                    proj_name = " ".join(words).strip()
+                    proj_name = re.sub(r"^[^\w+]+|[^\w+]+$", "", proj_name)
                     if len(proj_name) > 3:
                         projects.append(proj_name)
                         
-    # Fallback: if no projects section, extract project names from text using keywords
-    if not projects:
-        common_projects = ["e-commerce", "chat application", "portfolio", "task manager", "weather app", "compiler", "sudoku", "library management"]
-        for p in common_projects:
-            if p in text_lower:
-                projects.append(p.title())
-                
     return list(set(projects))

@@ -6,7 +6,7 @@ import {
   Code2, Award, Info, Download, ExternalLink,
   Link2, GraduationCap, Calendar, Clock, Globe,
   Shield, Hash, CheckCircle2, ChevronRight, Check,
-  Play, Upload
+  Play, Upload, Activity
 } from 'lucide-react';
 import GithubIcon from '../components/icons/GithubIcon';
 import { usePipeline } from '../context/PipelineContext';
@@ -421,6 +421,201 @@ export default function Results() {
                 </div>
               </div>
 
+              {/* Advanced Match Details Card */}
+              {unwrap(completeCandidate.match_details) && (
+                <div className="glass-card-static" style={{ padding: 'var(--space-6)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                      <Activity size={18} color="var(--accent-purple)" />
+                      <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700 }}>GitHub-Resume Match Details</h3>
+                    </div>
+                    <span className={`badge badge-${
+                      unwrap(completeCandidate.match_details).fuzzy_rating === 'Excellent' ? 'success' :
+                      unwrap(completeCandidate.match_details).fuzzy_rating === 'High' ? 'info' :
+                      unwrap(completeCandidate.match_details).fuzzy_rating === 'Medium' ? 'warning' : 'danger'
+                    }`} style={{ padding: '4px 10px', borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 600 }}>
+                      {unwrap(completeCandidate.match_details).fuzzy_rating} Match
+                    </span>
+                  </div>
+
+                  {/* Scores Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)', marginBottom: 'var(--space-5)' }}>
+                    <div style={{ background: 'rgba(168, 85, 247, 0.03)', border: '1px solid rgba(168, 85, 247, 0.08)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: '4px' }}>Tech Stack Match (75%)</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <div style={{ flex: 1, height: '6px', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ width: `${(unwrap(completeCandidate.match_details).tech_stack_match_score * 100).toFixed(0)}%`, height: '100%', background: 'var(--gradient-primary)' }} />
+                        </div>
+                        <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+                          {(unwrap(completeCandidate.match_details).tech_stack_match_score * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ background: 'rgba(6, 182, 212, 0.03)', border: '1px solid rgba(6, 182, 212, 0.08)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: '4px' }}>Jaccard Similarity</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <div style={{ flex: 1, height: '6px', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ width: `${(unwrap(completeCandidate.match_details).jaccard_similarity * 100).toFixed(0)}%`, height: '100%', background: 'var(--accent-cyan)' }} />
+                        </div>
+                        <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+                          {(unwrap(completeCandidate.match_details).jaccard_similarity * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ background: 'rgba(59, 130, 246, 0.03)', border: '1px solid rgba(59, 130, 246, 0.08)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: '4px' }}>Projects Fuzzy Match</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <div style={{ flex: 1, height: '6px', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ width: `${(unwrap(completeCandidate.match_details).project_name_match_score * 100).toFixed(0)}%`, height: '100%', background: 'var(--accent-blue)' }} />
+                        </div>
+                        <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+                          {(unwrap(completeCandidate.match_details).project_name_match_score * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ background: 'rgba(16, 185, 129, 0.03)', border: '1px solid rgba(16, 185, 129, 0.08)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
+                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: '4px' }}>Profile Correlation</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <div style={{ flex: 1, height: '6px', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ width: `${(unwrap(completeCandidate.match_details).profile_match_score * 100).toFixed(0)}%`, height: '100%', background: 'var(--accent-green)' }} />
+                        </div>
+                        <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+                          {(unwrap(completeCandidate.match_details).profile_match_score * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Skill Matches Breakdown */}
+                  <div style={{ marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                    {/* Tech Stack Skills */}
+                    <div>
+                      <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 'var(--space-2)' }}>
+                        Verified Tech Stack on GitHub
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+                        {unwrap(completeCandidate.match_details).skill_matches
+                          .filter(s => s.skill_type !== 'conceptual')
+                          .map((s, idx) => (
+                            <div key={idx} 
+                              title={s.matched_repos && s.matched_repos.length > 0 ? `Used in: ${s.matched_repos.join(', ')}` : 'No matching repositories'}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                background: s.matched ? 'rgba(16, 185, 129, 0.06)' : 'rgba(239, 68, 68, 0.06)',
+                                border: s.matched ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
+                                padding: '3px 8px',
+                                borderRadius: 'var(--radius-sm)',
+                                fontSize: 'var(--text-xs)',
+                                cursor: s.matched ? 'help' : 'default',
+                              }}
+                            >
+                              <span style={{ fontWeight: 500, color: s.matched ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                                {s.skill}
+                              </span>
+                              {s.matched ? (
+                                <span style={{ fontSize: '9px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-green)', padding: '1px 4px', borderRadius: '3px', fontWeight: 600 }}>
+                                  {s.priority_level?.split(' ')[1] || 'Matched'}
+                                </span>
+                              ) : (
+                                <span style={{ fontSize: '9px', background: 'rgba(239, 68, 68, 0.15)', color: 'var(--status-danger)', padding: '1px 4px', borderRadius: '3px', fontWeight: 600 }}>
+                                  Missing
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* CS Fundamentals & Concepts */}
+                    {unwrap(completeCandidate.match_details).skill_matches.some(s => s.skill_type === 'conceptual') && (
+                      <div>
+                        <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 'var(--space-2)' }}>
+                          CS Fundamentals & Concepts
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+                          {unwrap(completeCandidate.match_details).skill_matches
+                            .filter(s => s.skill_type === 'conceptual')
+                            .map((s, idx) => (
+                              <div key={idx} 
+                                title={s.matched_repos && s.matched_repos.length > 0 ? `Used in: ${s.matched_repos.join(', ')}` : 'Conceptual skill (not required on GitHub)'}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  background: s.matched ? 'rgba(16, 185, 129, 0.06)' : 'rgba(148, 163, 184, 0.06)',
+                                  border: s.matched ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(148, 163, 184, 0.2)',
+                                  padding: '3px 8px',
+                                  borderRadius: 'var(--radius-sm)',
+                                  fontSize: 'var(--text-xs)',
+                                  cursor: s.matched ? 'help' : 'default',
+                                }}
+                              >
+                                <span style={{ fontWeight: 500, color: s.matched ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                                  {s.skill}
+                                </span>
+                                {s.matched ? (
+                                  <span style={{ fontSize: '9px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-green)', padding: '1px 4px', borderRadius: '3px', fontWeight: 600 }}>
+                                    {s.priority_level?.split(' ')[1] || 'Matched'}
+                                  </span>
+                                ) : (
+                                  <span style={{ fontSize: '9px', background: 'rgba(148, 163, 184, 0.15)', color: 'var(--text-secondary)', padding: '1px 4px', borderRadius: '3px', fontWeight: 600 }}>
+                                    Concept
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Project Matches Breakdown */}
+                  {unwrap(completeCandidate.match_details).project_matches && unwrap(completeCandidate.match_details).project_matches.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 'var(--space-2)' }}>
+                        Verified Projects on GitHub
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                        {unwrap(completeCandidate.match_details).project_matches.map((p, idx) => (
+                          <div key={idx} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: 'rgba(148, 163, 184, 0.03)',
+                            border: '1px solid var(--border-subtle)',
+                            padding: 'var(--space-2) var(--space-3)',
+                            borderRadius: 'var(--radius-md)',
+                            fontSize: 'var(--text-xs)',
+                          }}>
+                            <div>
+                              <span style={{ fontWeight: 600 }}>{p.resume_project}</span>
+                              {p.matched_repo && (
+                                <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                  Matched to repo: <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-purple)' }}>{p.matched_repo}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                              <span className={`badge badge-${p.matched ? 'success' : 'secondary'}`} style={{ fontSize: '10px' }}>
+                                {p.matched ? 'Verified' : 'Unverified'}
+                              </span>
+                              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: p.matched ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                                {(p.similarity_score * 100).toFixed(0)}%
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Education */}
               {unwrap(completeCandidate.education) && (
                 <div className="glass-card-static" style={{ padding: 'var(--space-6)' }}>
@@ -544,20 +739,26 @@ export default function Results() {
           </div>
 
           {/* Merge Conflicts Resolved Section */}
-          {conflicts.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                <Info size={18} color="var(--status-warning)" />
-                <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700 }}>Merge Conflicts Resolved</h3>
-                <span className="badge badge-warning" style={{ fontSize: '10px' }}>{conflicts.length} resolved</span>
-              </div>
-              <ConflictLog conflicts={conflicts} />
-            </motion.div>
-          )}
+          {(() => {
+            const candidateConflicts = conflicts.filter(
+              c => c.candidate_id === getCid(completeCandidate)
+            );
+            if (candidateConflicts.length === 0) return null;
+            return (
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <Info size={18} color="var(--status-warning)" />
+                  <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700 }}>Merge Conflicts Resolved</h3>
+                  <span className="badge badge-warning" style={{ fontSize: '10px' }}>{candidateConflicts.length} resolved</span>
+                </div>
+                <ConflictLog conflicts={candidateConflicts} />
+              </motion.div>
+            );
+          })()}
         </div>
       )}
 

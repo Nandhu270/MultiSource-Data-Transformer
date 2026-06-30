@@ -2,6 +2,18 @@ import re
 import phonenumbers
 from datetime import datetime
 from dateutil import parser as date_parser
+from rapidfuzz import fuzz
+
+STANDARD_DEGREES = [
+    "B.Tech", "B.E.", "M.Tech", "M.E.", "B.Sc", "M.Sc", "BCA", "MCA", "MBA", "Ph.D.",
+    "Higher Secondary", "Secondary School", "Bachelor's Degree", "Master's Degree"
+]
+
+STANDARD_FIELDS = [
+    "Computer Science", "Information Technology", "Electronics & Communication",
+    "Electrical Engineering", "Mechanical Engineering", "Civil Engineering",
+    "Data Science", "Artificial Intelligence", "Software Engineering"
+]
 
 # A simple dictionary of skill aliases to canonical names
 SKILL_ALIASES = {
@@ -112,13 +124,13 @@ def normalize_education(line: str) -> dict:
     # Remove year ranges or individual years
     inst = re.sub(r"\b(20\d{2}|19\d{2})\b", "", inst)
     inst = re.sub(r"\b\d{4}\s*-\s*\d{4}\b", "", inst)
-    # Remove CGPA / GPA / percentage details
-    inst = re.sub(r"\bcgpa\b.*", "", inst, flags=re.IGNORECASE)
-    inst = re.sub(r"\bgpa\b.*", "", inst, flags=re.IGNORECASE)
-    inst = re.sub(r"\bclass\b.*", "", inst, flags=re.IGNORECASE)
-    inst = re.sub(r"\bpercentage\b.*", "", inst, flags=re.IGNORECASE)
-    inst = re.sub(r"\bmarks\b.*", "", inst, flags=re.IGNORECASE)
-    inst = re.sub(r":\s*\d+(\.\d+)?", "", inst)
+    # Remove CGPA / GPA / percentage details precisely
+    inst = re.sub(r"\bcgpa\b\s*(?::\s*)?\d+(?:\.\d+)?", "", inst, flags=re.IGNORECASE)
+    inst = re.sub(r"\bgpa\b\s*(?::\s*)?\d+(?:\.\d+)?", "", inst, flags=re.IGNORECASE)
+    inst = re.sub(r"\bclass\b\s*(?::\s*)?\w+", "", inst, flags=re.IGNORECASE)
+    inst = re.sub(r"\bpercentage\b\s*(?::\s*)?\d+(?:\.\d+)?%?", "", inst, flags=re.IGNORECASE)
+    inst = re.sub(r"\bmarks\b\s*(?::\s*)?\d+", "", inst, flags=re.IGNORECASE)
+    inst = re.sub(r"\b(?:cgpa|gpa)\b", "", inst, flags=re.IGNORECASE)
     # Remove degree names
     inst = re.sub(r"\bb\.?\s*tech\b|\bb\.?\s*e\.?\b|\bm\.?\s*tech\b|\bbachelor\s+of\s+technology\b|\bbachelor\s+of\s+engineering\b", "", inst, flags=re.IGNORECASE)
     # Remove field names
@@ -127,21 +139,38 @@ def normalize_education(line: str) -> dict:
     inst = re.sub(r"^[,\-\s/]+|[,\-\s/]+$", "", inst)
     inst = re.sub(r"\s+", " ", inst).strip()
     
-    # If cleaned inst is empty or too short, fallback to a sensible name from original string
-    if not inst or len(inst) < 5:
-        if "karpagam" in line_clean.lower():
-            inst = "Karpagam College of Engineering"
-        elif "pune" in line_clean.lower():
-            inst = "Pune University"
-        elif "coimbatore" in line_clean.lower():
-            inst = "Coimbatore Institute of Technology"
-        else:
-            inst = "University"
+    # If cleaned inst is empty or too short, fallback to a generic name
+    if not inst or len(inst) < 3:
+        inst = "University"
+        
+    # Fuzzy align degree to standard list
+    if degree:
+        best_deg = None
+        best_score = 0
+        for std_deg in STANDARD_DEGREES:
+            score = fuzz.ratio(degree.lower(), std_deg.lower())
+            if score > best_score:
+                best_score = score
+                best_deg = std_deg
+        if best_score >= 80:
+            degree = best_deg
+
+    # Fuzzy align field of study to standard list
+    if field:
+        best_field = None
+        best_score = 0
+        for std_field in STANDARD_FIELDS:
+            score = fuzz.ratio(field.lower(), std_field.lower())
+            if score > best_score:
+                best_score = score
+                best_field = std_field
+        if best_score >= 80:
+            field = best_field
             
     return {
         "institution": inst,
-        "degree": degree,
-        "field": field,
+        "degree": degree if degree else "",
+        "field": field if field else "",
         "end_year": end_year
     }
 
