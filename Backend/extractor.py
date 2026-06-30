@@ -121,8 +121,18 @@ def extract_skills(text: str) -> list:
     """
     lines = [line.strip() for line in text.split("\n")]
     skills_start_idx = -1
-    skills_headers = ["skills", "technical skills", "technologies", "core competencies", "skills & tools", "areas of expertise", "it skills"]
-    next_section_headers = ["experience", "employment", "work history", "education", "projects", "links", "languages", "interests", "certifications", "activities", "awards"]
+    skills_headers = [
+        "skills", "technical skills", "technologies", "core competencies", 
+        "skills & tools", "areas of expertise", "it skills", "programming languages", 
+        "technical expertise", "key skills", "expertises", "skills details", 
+        "competencies", "computer skills", "development skills", "technical proficiencies", 
+        "technical profile"
+    ]
+    next_section_headers = [
+        "experience", "employment", "work history", "education", "projects", 
+        "links", "languages", "interests", "certifications", "activities", "awards",
+        "professional experience", "work experience", "projects & publications"
+    ]
     
     for i, line in enumerate(lines):
         line_lower = line.lower()
@@ -145,7 +155,7 @@ def extract_skills(text: str) -> list:
             line_clean = line.strip()
             if line_clean.count(",") >= 2 or line_clean.count(";") >= 2:
                 skills_lines.append(line)
-
+ 
     extracted_skills = []
     ignore_words = {
         "and", "the", "for", "with", "using", "from", "to", "skills", "technical", "technologies", "tools",
@@ -163,8 +173,8 @@ def extract_skills(text: str) -> list:
         # Clean bullet points
         line_clean = re.sub(r"^[-*•o+\d\.\s]+", "", line_clean)
         
-        # Split by comma, semicolon, or vertical bar
-        parts = re.split(r"[,;|]|\s{2,}", line_clean)
+        # Split by comma, semicolon, slash, vertical bar, bullet point, or tab
+        parts = re.split(r"[,;/|•·\*\t]|\s{2,}", line_clean)
         for part in parts:
             part_clean = part.strip()
             

@@ -32,6 +32,7 @@ export default function Results() {
   const hasResults = state.pipeline.status === 'completed';
   const candidates = hasResults ? state.results.candidates : [];
   const selectedCandidate = state.results.selectedCandidate || candidates[0];
+  const hasJd = candidates.some(c => c.jd_match_score !== undefined && c.jd_match_score !== null);
   const conflicts = hasResults ? state.results.conflicts : [];
   const outputJSON = hasResults ? state.results.outputJSON : null;
 
@@ -68,7 +69,7 @@ export default function Results() {
   // Helper to check if a field path is present and enabled in the configuration schema
   const hasField = (fieldPrefix) => {
     if (!state.customConfig || !state.customConfig.fields) return true; // fallback to show all
-    return state.customConfig.fields.some(f => 
+    return state.customConfig.fields.some(f =>
       f.required !== false && (f.path === fieldPrefix || f.path.startsWith(fieldPrefix + '.'))
     );
   };
@@ -251,7 +252,10 @@ export default function Results() {
             <thead style={{ position: 'sticky', top: 0, background: 'var(--bg-surface)', zIndex: 10, boxShadow: '0 1px 0 var(--border-subtle)' }}>
               <tr>
                 <th style={{ padding: 'var(--space-3) var(--space-6)', width: '40px', background: 'var(--bg-surface)' }}></th>
-                {['Candidate ID', 'Full Name', 'Email ID', 'Phone', 'Overall Confidence'].map(h => (
+                {(hasJd
+                  ? ['Candidate ID', 'Full Name', 'Email ID', 'Phone', 'Overall Confidence', 'JD Match', 'Recommendation']
+                  : ['Candidate ID', 'Full Name', 'Email ID', 'Phone', 'Overall Confidence']
+                ).map(h => (
                   <th key={h} style={{
                     padding: 'var(--space-3) var(--space-4)',
                     textAlign: 'left',
@@ -332,6 +336,31 @@ export default function Results() {
                     <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
                       <ConfidenceBadge confidence={candidateConf} size="sm" showLabel={false} />
                     </td>
+                    {hasJd && (
+                      <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
+                        {c.jd_match_score !== undefined && c.jd_match_score !== null ? (
+                          <span style={{
+                            fontSize: '11px', fontWeight: 600, color: 'var(--accent-cyan)',
+                            background: 'rgba(6, 182, 212, 0.08)', padding: '2px 8px', borderRadius: 'var(--radius-full)',
+                            display: 'inline-flex', alignItems: 'center', gap: '4px', border: '1px solid rgba(6, 182, 212, 0.2)',
+                            fontFamily: 'var(--font-mono)',
+                          }}>
+                            {Math.round(c.jd_match_score * 100)}%
+                          </span>
+                        ) : '—'}
+                      </td>
+                    )}
+                    {hasJd && (
+                      <td style={{ padding: 'var(--space-3) var(--space-4)' }}>
+                        {c.ai_analysis?.recommendation ? (
+                          <span className={`badge badge-${c.ai_analysis.recommendation === 'Recommended' ? 'success' :
+                              c.ai_analysis.recommendation === 'Needs Review' ? 'warning' : 'danger'
+                            }`} style={{ padding: '2px 8px', borderRadius: 'var(--radius-full)', fontSize: '10px', fontWeight: 700 }}>
+                            {c.ai_analysis.recommendation}
+                          </span>
+                        ) : '—'}
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -369,7 +398,9 @@ export default function Results() {
                     {unwrap(completeCandidate.full_name)?.split(' ').map(n => n[0]).join('') || 'C'}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 700 }}>{unwrap(completeCandidate.full_name)}</h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+                      <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 700 }}>{unwrap(completeCandidate.full_name)}</h2>
+                    </div>
                     {unwrap(completeCandidate.headline) && (
                       <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginTop: '2px' }}>
                         {unwrap(completeCandidate.headline)}
@@ -380,8 +411,18 @@ export default function Results() {
                         "{unwrap(completeCandidate.github_profile).bio}"
                       </div>
                     )}
-                    <div style={{ marginTop: 'var(--space-2)' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
                       <ConfidenceBadge confidence={unwrap(completeCandidate.overall_confidence) || 0.75} size="md" />
+
+                      {completeCandidate.profile_freshness !== undefined && (
+                        <span style={{
+                          fontSize: '10px', fontWeight: 600, color: 'var(--accent-teal)',
+                          background: 'rgba(20, 184, 166, 0.08)', padding: '3px 10px', borderRadius: 'var(--radius-full)',
+                          display: 'inline-flex', alignItems: 'center', gap: '4px', border: '1px solid rgba(20, 184, 166, 0.2)',
+                        }}>
+                          <Clock size={10} /> Freshness: {Math.round(completeCandidate.profile_freshness * 100)}%
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -435,6 +476,46 @@ export default function Results() {
                 </div>
               </div>
 
+              {/* AI Insights & Summary Card */}
+              {completeCandidate.ai_analysis && (
+                <div className="glass-card-static" style={{ padding: 'var(--space-6)', border: '1px solid rgba(139, 92, 246, 0.2)', background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.02) 0%, rgba(6, 182, 212, 0.01) 100%)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                    <Shield size={18} color="var(--accent-purple)" />
+                    <h3 style={{ fontSize: 'var(--text-xs)', fontWeight: 750, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Candidate Insights</h3>
+                  </div>
+
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 'var(--space-4)' }}>
+                    {completeCandidate.ai_analysis.summary}
+                  </p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+                    {/* Strengths */}
+                    <div>
+                      <h4 style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--status-success)', marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Check size={12} /> Key Strengths
+                      </h4>
+                      <ul style={{ paddingLeft: 'var(--space-4)', margin: 0, fontSize: '11px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {completeCandidate.ai_analysis.strengths?.map((s, idx) => (
+                          <li key={idx}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Risks */}
+                    <div>
+                      <h4 style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--status-error)', marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Info size={12} /> Potential Risks
+                      </h4>
+                      <ul style={{ paddingLeft: 'var(--space-4)', margin: 0, fontSize: '11px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {completeCandidate.ai_analysis.risks?.map((r, idx) => (
+                          <li key={idx}>{r}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Advanced Match Details Card */}
               {hasField('skills') && unwrap(completeCandidate.match_details) && (
                 <div className="glass-card-static" style={{ padding: 'var(--space-6)' }}>
@@ -443,11 +524,10 @@ export default function Results() {
                       <Activity size={18} color="var(--accent-purple)" />
                       <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700 }}>GitHub-Resume Match Details</h3>
                     </div>
-                    <span className={`badge badge-${
-                      unwrap(completeCandidate.match_details).fuzzy_rating === 'Excellent' ? 'success' :
-                      unwrap(completeCandidate.match_details).fuzzy_rating === 'High' ? 'info' :
-                      unwrap(completeCandidate.match_details).fuzzy_rating === 'Medium' ? 'warning' : 'danger'
-                    }`} style={{ padding: '4px 10px', borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 600 }}>
+                    <span className={`badge badge-${unwrap(completeCandidate.match_details).fuzzy_rating === 'Excellent' ? 'success' :
+                        unwrap(completeCandidate.match_details).fuzzy_rating === 'High' ? 'info' :
+                          unwrap(completeCandidate.match_details).fuzzy_rating === 'Medium' ? 'warning' : 'danger'
+                      }`} style={{ padding: '4px 10px', borderRadius: 'var(--radius-full)', fontSize: 'var(--text-xs)', fontWeight: 600 }}>
                       {unwrap(completeCandidate.match_details).fuzzy_rating} Match
                     </span>
                   </div>
@@ -579,7 +659,7 @@ export default function Results() {
                         {unwrap(completeCandidate.match_details).skill_matches
                           .filter(s => s.skill_type !== 'conceptual')
                           .map((s, idx) => (
-                            <div key={idx} 
+                            <div key={idx}
                               title={s.matched_repos && s.matched_repos.length > 0 ? `Used in: ${s.matched_repos.join(', ')}` : 'No matching repositories'}
                               style={{
                                 display: 'flex',
@@ -620,7 +700,7 @@ export default function Results() {
                           {unwrap(completeCandidate.match_details).skill_matches
                             .filter(s => s.skill_type === 'conceptual')
                             .map((s, idx) => (
-                              <div key={idx} 
+                              <div key={idx}
                                 title={s.matched_repos && s.matched_repos.length > 0 ? `Used in: ${s.matched_repos.join(', ')}` : 'Conceptual skill (not required on GitHub)'}
                                 style={{
                                   display: 'flex',
@@ -789,6 +869,67 @@ export default function Results() {
 
             </div>
           </div>
+
+          {/* Section-Wise Source Comparison */}
+          {completeCandidate.source_comparison && (
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <Activity size={18} color="var(--accent-cyan)" />
+                <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700 }}>Section-Wise Source Comparison</h3>
+              </div>
+
+              <div className="glass-card-static" style={{ overflowX: 'auto', padding: 0 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'rgba(148, 163, 184, 0.02)' }}>
+                      {['Section/Field', 'Recruiter CSV', 'Resume File', 'GitHub Profile'].map(h => (
+                        <th key={h} style={{
+                          padding: 'var(--space-3) var(--space-4)',
+                          textAlign: 'left',
+                          fontSize: 'var(--text-xs)',
+                          fontWeight: 600,
+                          color: 'var(--text-muted)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                        }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { key: 'full_name', label: 'Full Name' },
+                      { key: 'primary_email', label: 'Email' },
+                      { key: 'phone', label: 'Phone Number' },
+                      { key: 'current_company', label: 'Current Company' },
+                      { key: 'current_title', label: 'Current Title' },
+                    ].map(row => {
+                      const comp = completeCandidate.source_comparison[row.key] || {};
+                      return (
+                        <tr key={row.key} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                          <td style={{ padding: 'var(--space-3) var(--space-4)', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                            {row.label}
+                          </td>
+                          <td style={{ padding: 'var(--space-3) var(--space-4)', color: comp.recruiter_csv ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>
+                            {comp.recruiter_csv || '—'}
+                          </td>
+                          <td style={{ padding: 'var(--space-3) var(--space-4)', color: comp.resume ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>
+                            {comp.resume || '—'}
+                          </td>
+                          <td style={{ padding: 'var(--space-3) var(--space-4)', color: comp.github ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>
+                            {comp.github || '—'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          )}
 
           {/* Merge Conflicts Resolved Section */}
           {(() => {

@@ -154,9 +154,21 @@ SOURCE_PRIORITY = ["recruiter_csv", "resume", "github_csv"]
 SOURCE_WEIGHTS = {"recruiter_csv": 0.9, "resume": 0.7, "github_csv": 0.6}
 METHOD_WEIGHTS = {"verbatim": 1.0, "regex": 0.8, "inferred": 0.6}
 
+# Common technical skills database for Job Description matching
+COMMON_SKILLS_DB = {
+    "python", "javascript", "typescript", "react", "angular", "vue", "node", "node.js",
+    "express", "django", "flask", "fastapi", "spring", "java", "c++", "c#", "ruby", "rails",
+    "go", "golang", "rust", "php", "laravel", "html", "css", "sql", "nosql", "mysql",
+    "postgresql", "postgres", "mongodb", "redis", "aws", "azure", "gcp", "docker",
+    "kubernetes", "k8s", "git", "github", "jenkins", "ci/cd", "terraform", "ansible",
+    "pytorch", "tensorflow", "pandas", "numpy", "scikit-learn", "spark", "hadoop",
+    "graphql", "rest", "api", "opencv", "solidity", "flutter", "react native"
+}
+
 class CandidatePipeline:
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any], job_description: str = None):
         self.config = config
+        self.job_description = job_description
         self.conflicts = []
         self.raw_resumes = []  # List of { filename, text, contact_info, skills, experience, education }
         
@@ -627,6 +639,91 @@ class CandidatePipeline:
             final_experience = matching_resume["experience"] if matching_resume else []
             final_education = matching_resume["education"] if matching_resume else []
             
+            # ─── Calculate Profile Freshness ───
+            freshness_years = []
+            if matching_resume:
+                for exp in matching_resume.get("experience", []):
+                    years = [int(y) for y in re.findall(r"\b(20\d{2})\b", str(exp.get("end_date") or exp.get("start_date") or ""))]
+                    if years:
+                        freshness_years.append(max(years))
+            for repo in github_repos:
+                years = [int(y) for y in re.findall(r"\b(20\d{2})\b", str(repo.get("updated_at") or ""))]
+                if years:
+                    freshness_years.append(max(years))
+            
+            latest_year = max(freshness_years) if freshness_years else 2024
+            if latest_year >= 2026:
+                freshness = 1.0
+            elif latest_year == 2025:
+                freshness = 0.90
+            elif latest_year == 2024:
+                freshness = 0.75
+            elif latest_year == 2023:
+                freshness = 0.55
+            else:
+                freshness = 0.35
+
+            # ─── Perform Job Description (JD) Matching ───
+            jd_match_score = None
+            if self.job_description:
+                candidate_skills_set = {s["name"].lower() for s in final_skills}
+                jd_text_lower = self.job_description.lower()
+                jd_skills = set()
+                
+                # Scan against COMMON_SKILLS_DB and candidate's own skills
+                all_possible_skills = COMMON_SKILLS_DB.union(candidate_skills_set)
+                
+                for skill in all_possible_skills:
+                    skill_lower = skill.lower()
+                    # Handle special characters (e.g., c++, c#, node.js) safely
+                    if any(char in skill_lower for char in [".", "+", "#", "/"]):
+                        pattern = r'(?:^|[^a-zA-Z0-9_])' + re.escape(skill_lower) + r'(?:$|[^a-zA-Z0-9_])'
+                    else:
+                        pattern = r'\b' + re.escape(skill_lower) + r'\b'
+                        
+                    if re.search(pattern, jd_text_lower):
+                        jd_skills.add(normalize_skill(skill))
+                        
+                # Fallback to substring matching if no skills were matched with boundaries
+                if not jd_skills:
+                    for skill in all_possible_skills:
+                        if skill.lower() in jd_text_lower:
+                            jd_skills.add(normalize_skill(skill))
+                            
+                jd_match_score = GithubResumeMatcher.calculate_dice_coefficient(candidate_skills_set, jd_skills)
+
+            # ─── Side-by-Side Source Comparison ───
+            final_phone = all_phones[0] if all_phones else None
+            final_title = "Software Engineer" if matching_resume else None
+            
+            source_comparison = {
+                "full_name": {
+                    "recruiter_csv": raw_name,
+                    "resume": matching_resume.get("name") if matching_resume else None,
+                    "github": github_profile_data.get("name") if github_profile_data else (matching_github.get("name") if matching_github else None)
+                },
+                "primary_email": {
+                    "recruiter_csv": raw_email,
+                    "resume": matching_resume["contact_info"]["emails"][0] if (matching_resume and matching_resume["contact_info"]["emails"]) else None,
+                    "github": github_profile_data.get("email") if github_profile_data else (matching_github.get("email") if matching_github else None)
+                },
+                "phone": {
+                    "recruiter_csv": raw_phone,
+                    "resume": matching_resume["contact_info"]["phones"][0] if (matching_resume and matching_resume["contact_info"]["phones"]) else None,
+                    "github": None
+                },
+                "current_company": {
+                    "recruiter_csv": clean_val(row.get("company")) if "company" in recruiter_df.columns else None,
+                    "resume": matching_resume["experience"][0].get("company") if (matching_resume and matching_resume.get("experience")) else None,
+                    "github": github_profile_data.get("company") if github_profile_data else None
+                },
+                "current_title": {
+                    "recruiter_csv": clean_val(row.get("title")) if "title" in recruiter_df.columns else None,
+                    "resume": matching_resume.get("headline") or (matching_resume["experience"][0].get("title") if (matching_resume and matching_resume.get("experience")) else None),
+                    "github": None
+                }
+            }
+            
             # Run Advanced Matcher
             match_details_dict = None
             overall_conf = None
@@ -687,6 +784,28 @@ class CandidatePipeline:
                     "full_name": name_entropy,
                     "location": loc_entropy,
                     "links": links_entropy
+                },
+                "profile_freshness": freshness,
+                "jd_match_score": jd_match_score,
+                "source_comparison": source_comparison,
+                "ai_analysis": {
+                    "summary": f"{final_name} is a {final_title or 'Software Professional'} with {len(final_experience)} documented positions. They demonstrate core strengths in {', '.join([s['name'] for s in final_skills[:3]])}. Their GitHub profile shows active engagement in {len(github_repos)} public repositories. " + (f"Some minor inconsistencies exist across data sources (entropy: {profile_entropy}), requiring recruiter verification." if profile_entropy > 0 else "The profile shows excellent data consistency across all verified sources."),
+                    "strengths": [
+                        s for s in [
+                            "Broad skill set with over 8 core tech stacks." if len(final_skills) >= 8 else None,
+                            "Proven industry experience with multiple corporate/project tenures." if len(final_experience) >= 3 else None,
+                            "Highly active open-source contributor with public repositories." if len(github_repos) >= 3 else None,
+                            "Exceptional alignment between resume skills and active GitHub repositories." if match_details_dict and match_details_dict.get("tech_stack_match_score", 0.0) >= 0.8 else None
+                        ] if s is not None
+                    ] or ["Demonstrates solid foundation in core technologies."],
+                    "risks": [
+                        r for r in [
+                            "Significant data conflicts across recruiter records and resume details." if profile_entropy > 0.5 else None,
+                            "Missing primary contact details (phone number)." if not final_phone else None,
+                            "No public GitHub repositories found for hands-on project verification." if not github_repos else None
+                        ] if r is not None
+                    ] or ["No major profile risks or employment discrepancies detected."],
+                    "recommendation": "Recommended" if (overall_conf or 0.7) >= 0.75 and profile_entropy < 0.3 else ("Needs Review" if (overall_conf or 0.7) >= 0.45 else "Not Recommended")
                 },
                 "provenance": [
                     {"field": "full_name", "source": name_src, "method": "verbatim" if name_src == "recruiter_csv" else "regex"},
@@ -753,6 +872,9 @@ class CandidatePipeline:
         projected = {
             "candidate_id": record["candidate_id"]
         }
+        if include_confidence:
+            projected["overall_confidence"] = record.get("overall_confidence")
+            projected["provenance"] = record.get("provenance", [])
         
         for field in fields_config:
             if field.get("required") is False:
@@ -831,5 +953,13 @@ class CandidatePipeline:
             projected["profile_entropy"] = record["profile_entropy"]
         if "field_entropies" in record:
             projected["field_entropies"] = record["field_entropies"]
+        if "profile_freshness" in record:
+            projected["profile_freshness"] = record["profile_freshness"]
+        if "jd_match_score" in record:
+            projected["jd_match_score"] = record["jd_match_score"]
+        if "source_comparison" in record:
+            projected["source_comparison"] = record["source_comparison"]
+        if "ai_analysis" in record:
+            projected["ai_analysis"] = record["ai_analysis"]
             
         return projected

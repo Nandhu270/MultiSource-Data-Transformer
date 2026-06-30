@@ -20,6 +20,7 @@ export default function UploadSources() {
   const githubCsvRef = useRef(null);
 
   const [pipelineResult, setPipelineResult] = useState(null);
+  const [jobDescription, setJobDescription] = useState('');
 
   // Enforce stepped wizard flow - redirect to config if not saved
   useEffect(() => {
@@ -87,6 +88,9 @@ export default function UploadSources() {
       });
 
       formData.append('config_json', JSON.stringify(state.customConfig));
+      if (jobDescription) {
+        formData.append('job_description', jobDescription);
+      }
 
       const response = await fetch('http://localhost:8000/api/run_pipeline', {
         method: 'POST',
@@ -264,7 +268,31 @@ export default function UploadSources() {
 
       </div>
 
-
+      {/* Job Description Panel */}
+      <motion.div className="glass-card" style={{ padding: 'var(--space-6)' }}>
+        <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, marginBottom: 'var(--space-2)' }}>
+          Job Description (Optional)
+        </h3>
+        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 'var(--space-4)' }}>
+          Paste the Job Description to automatically calculate the Dice-Sørensen candidate matching score.
+        </p>
+        <textarea
+          value={jobDescription}
+          onChange={(e) => setJobDescription(e.target.value)}
+          placeholder="Paste Job Description here (e.g. 'Looking for a Senior Python Developer with React and SQL experience...')"
+          style={{
+            width: '100%',
+            height: '100px',
+            background: 'rgba(255, 255, 255, 0.01)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-3)',
+            fontSize: 'var(--text-xs)',
+            color: 'var(--text-primary)',
+            resize: 'vertical',
+          }}
+        />
+      </motion.div>
 
       {/* Execution panel */}
       <motion.div style={{

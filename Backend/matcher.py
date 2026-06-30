@@ -155,27 +155,39 @@ class GithubResumeMatcher:
     @staticmethod
     def get_fuzzy_rating(score: float) -> str:
         """
-        Determine the fuzzy rating using triangular/trapezoidal membership functions.
-        Maps the continuous score (0.0 to 1.0) into one of the four fuzzy sets.
+        Determine the fuzzy rating using standard triangular/trapezoidal membership functions.
+        Maps the continuous score (0.0 to 1.0) into one of the four fuzzy sets: Low, Medium, High, Excellent.
         """
         # Membership in 'Low'
-        mu_low = max(0.0, 1.0 - score / 0.3)
-        
-        # Membership in 'Medium'
-        if score <= 0.25:
-            mu_med = max(0.0, score / 0.25)
+        if score <= 0.2:
+            mu_low = 1.0
+        elif score <= 0.45:
+            mu_low = (0.45 - score) / 0.25
         else:
-            mu_med = max(0.0, 1.0 - (score - 0.25) / 0.35)
+            mu_low = 0.0
+            
+        # Membership in 'Medium'
+        if score <= 0.25 or score >= 0.75:
+            mu_med = 0.0
+        elif score <= 0.5:
+            mu_med = (score - 0.25) / 0.25
+        else:
+            mu_med = (0.75 - score) / 0.25
             
         # Membership in 'High'
-        if score <= 0.5:
-            mu_high = max(0.0, (score - 0.3) / 0.2)
+        if score <= 0.55 or score >= 0.9:
+            mu_high = 0.0
+        elif score <= 0.75:
+            mu_high = (score - 0.55) / 0.2
         else:
-            mu_high = max(0.0, 1.0 - (score - 0.5) / 0.4)
+            mu_high = (0.9 - score) / 0.15
             
         # Membership in 'Excellent'
-        mu_excel = max(0.0, (score - 0.7) / 0.3) if score >= 0.7 else 0.0
-        
+        if score <= 0.8:
+            mu_excel = 0.0
+        else:
+            mu_excel = (score - 0.8) / 0.2
+            
         ratings = {
             "Low": mu_low,
             "Medium": mu_med,
@@ -232,7 +244,7 @@ class GithubResumeMatcher:
             "web development", "frontend", "backend", "full stack", "web design",
             "cloud computing", "devops", "testing", "software testing",
             "machine learning", "deep learning", "artificial intelligence", "ai", "ml", "nlp", "computer vision",
-            "mongodb", "mysql", "git", "github", "vs code", "vscode", "web technologies", "web technology",
+            "web technologies", "web technology",
             "problem-solving", "problem solving", "adaptability", "soft skills", "soft skill", "communication",
             "time management", "management"
         }
@@ -387,18 +399,18 @@ class GithubResumeMatcher:
         # Calculate Harmonic Match between tech_stack_match_score (Skill Match) and profile_match_score (Profile Match)
         harmonic_match_score = self.calculate_harmonic_match(tech_stack_match_score, profile_match_score)
         
-        # 5. Weight Sum (75% on Tech Stack Match, 25% on others)
-        # If there are no projects, adjust weights dynamically so we don't penalize candidates
-        if resume.projects:
-            w_tech = 0.75
-            w_proj = 0.15
-            w_profile = 0.10
-        else:
-            w_tech = 0.85
-            w_proj = 0.0
-            w_profile = 0.15
-            
-        overall_score = (w_tech * tech_stack_match_score) + (w_proj * project_name_match_score) + (w_profile * profile_match_score)
+        # Base weights
+        w_tech = 0.85
+        w_profile = 0.15
+        
+        # Base score based on tech stack match and profile verification
+        overall_score = (w_tech * tech_stack_match_score) + (w_profile * profile_match_score)
+        
+        # Add a Project Match Boost if candidate has projects listed on resume that are verified on GitHub
+        if resume.projects and project_name_match_score > 0.0:
+            # Boost score proportionally by up to +0.10 based on how well projects match
+            boost = project_name_match_score * 0.10
+            overall_score = min(overall_score + boost, 1.0)
         
         # Round scores
         overall_score = round(overall_score, 4)

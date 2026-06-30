@@ -1,90 +1,213 @@
-Architecture Overview
-This project is a Multi-Source Candidate Profile Transformer. It parses, normalizes, matches, and merges candidate profiles from three distinct sources:
+# Multi-Source Multi-Candidate Profile Transformer
 
-Recruiter CSV: Spreadsheets managed by recruiters containing candidate contact info and status.
-GitHub CSV: Data scraped or exported from GitHub (usernames, repositories, etc.).
-Resumes: Documents in PDF or Word (DOCX) format.
+The **Multi-Source Multi-Candidate Profile Transformer** is a high-performance system designed to ingest, parse, normalize, and match candidate information across three distinct data channels: **Recruiter CSVs**, **GitHub Scraping/CSV data**, and **PDF/Word Resumes**. 
 
-1. Backend Architecture (Python + FastAPI)
-The backend is located in the 
+It uses advanced matching metrics, fuzzy logic classifiers, and information-theory metrics (Shannon Entropy) to resolve field conflicts, verify projects, and evaluate candidate match confidence.
 
-Backend
- folder and is built on a modular Python stack:
+---
 
+## 🏗️ Architecture & Component Design
 
-app.py
-: The entry point. Exposes a FastAPI application with CORS enabled. It defines a single, robust endpoint:
-POST /api/run_pipeline: Accepts the Recruiter CSV, GitHub CSV, a list of Resume files, and a JSON configuration string (defining conflict resolution rules). It processes these in a secure temporary directory and returns the processed profiles and conflicts.
+The application follows a decoupled backend-frontend architecture:
 
+```
+                  ┌──────────────────────────────────────────────┐
+                  │                  Ingestion                   │
+                  │  ┌──────────────┐ ┌────────────┐ ┌────────┐  │
+                  │  │Recruiter CSV │ │ GitHub CSV │ │Resumes │  │
+                  │  └──────┬───────┘ └─────┬──────┘ └───┬────┘  │
+                  └─────────┼───────────────┼────────────┼───────┘
+                            │               │            │
+                            └───────────────┼────────────┘
+                                            ▼
+                  ┌──────────────────────────────────────────────┐
+                  │                FastAPI API                   │
+                  │          (POST /api/run_pipeline)            │
+                  └─────────────────────────┬────────────────────┘
+                                            │
+                                            ▼
+                  ┌──────────────────────────────────────────────┐
+                  │             pipeline.py Orchestrator         │
+                  └──────┬───────────────┬──────────────┬────────┘
+                         │               │              │
+                         ▼               ▼              ▼
+                  ┌────────────┐  ┌────────────┐  ┌────────────┐
+                  │extractor.py│  │normalizer.py│  │ matcher.py │
+                  │(PDF/Word)  │  │(Standards) │  │(Algorithms)│
+                  └────────────┘  └────────────┘  └────────────┘
+                                         │
+                                         ▼
+                  ┌──────────────────────────────────────────────┐
+                  │            JSON output / conflicts           │
+                  └──────────────────────┬───────────────────────┘
+                                         │
+                                         ▼
+                  ┌──────────────────────────────────────────────┐
+                  │             React Results Frontend           │
+                  └──────────────────────────────────────────────┘
+```
 
-pipeline.py
-: The core orchestrator. Contains the CandidatePipeline class, which:
-Loads and parses resumes.
-Cleans and extracts GitHub usernames from URLs and handles.
-Calls the GitHub API (optionally authenticated) to fetch additional profile details.
-Matches profiles across the three sources using fuzzy matching (rapidfuzz) on names, emails, and phone numbers.
-Merges fields and flags conflicts according to the user-defined configuration.
+### 1. Backend Service (FastAPI)
+The backend is located in the `Backend/` directory and contains the following core components:
 
+*   **[`app.py`](Backend/app.py)**: The entrypoint exposing a FastAPI server. It handles CORS, temporary file management for uploaded resumes, and serves the `POST /api/run_pipeline` endpoint.
+*   **[`pipeline.py`](Backend/pipeline.py)**: The central pipeline orchestrator. It manages the sequential processing flow:
+    1.  Parse PDF/Word files and extract structural text.
+    2.  Ingest Recruiter and GitHub CSV records.
+    3.  Call the GitHub API (with optional authorization token) to scrape repository metadata, primary languages, description keywords, and topics.
+    4.  Run the side-by-side matching engine across sources.
+    5.  Perform conflict resolution based on user priority matrices and compute Shannon entropy.
+    6.  Project the resulting unified candidates record.
+*   **[`matcher.py`](Backend/matcher.py)**: The core algorithmic engine. It computes similarity coefficients (Jaccard, Dice, Cosine), fuzzy name/email overlaps, project name matching, project boost calculations, and mapping to fuzzy logic ratings.
+*   **[`extractor.py`](Backend/extractor.py)**: Responsible for unstructured document parsing. It uses `pdfplumber` to extract text and hyperlinks from PDFs, and `python-docx` for Word files, applying targeted regular expressions to extract contacts, links, skills, experience, and education.
+*   **[`normalizer.py`](Backend/normalizer.py)**: Standardizes variable formats. It uses `phonenumbers` to format international dialing numbers, standardizes date ranges to a `YYYY-MM` schema, and applies dictionary maps to normalize syntax (e.g., mapping `JS` $\rightarrow$ `javascript`, `ReactJS` $\rightarrow$ `react`).
 
-extractor.py
-: Handles file parsing and information extraction.
-Uses pdfplumber to extract text and embedded hyperlinks from PDFs.
-Uses python-docx to parse Word documents.
-Uses regular expressions and heuristics to extract names, emails, phone numbers, LinkedIn/GitHub links, skills, experience, and education.
+### 2. Frontend Client (React)
+The frontend is a modern React application optimized with Vite:
+*   **[`PipelineContext.jsx`](src/context/PipelineContext.jsx)**: Global state provider. Handles configuration values, pipeline run history, pipeline status loops, and merges frontend states.
+*   **[`Results.jsx`](src/pages/Results.jsx)**: Interactive results panel detailing verified candidates, side-by-side field values, conflict logs, and granular GitHub repository match metrics.
 
+---
 
-normalizer.py
-: Standardizes data fields.
-Normalizes phone numbers (e.g., removing spaces, dashes, adding country codes using the phonenumbers library).
-Standardizes dates and skill names to ensure accurate matching and merging.
-2. Frontend Architecture (React + Vite)
-The frontend is a single-page React application located in the root directory:
+## ⚡ Key Features
 
-Vite: Used as the build tool and development server for fast HMR (Hot Module Replacement).
+*   **Multi-Source Extraction**: Seamlessly extracts and aligns fields from unstructured PDFs/DOCX and structured tables.
+*   **Conflict Resolution Engine**: Resolves contradicting contact information, locations, or names using configurable source weights, method weights, and corroboration boosts.
+*   **Fuzzy Project & Skill Alignment**: Compares projects declared on a candidate's resume with their public GitHub repositories.
+*   **Shannon Entropy Conflict Meter**: Computes data conflict levels on fields using information theory to flag records requiring manual verification.
+*   **JD Matching**: Extracts keywords from a natural-language Job Description (JD) and ranks candidates using Dice similarity.
+*   **Aesthetics & UX**: A premium dark-mode interface with progress animations, visual status indicators, and responsive charts.
 
+---
 
-package.json
-:
-framer-motion: Powers smooth transitions and animations.
-lucide-react: Provides modern UI icons.
-react-router-dom: Handles routing/navigation.
-UI Layout: Under 
+## 🧮 Core Algorithms & Mathematical Logic
 
-src/components
- and 
+The candidate transformer incorporates several mathematical, probabilistic, and string similarity algorithms to verify data correctness and reasoning.
 
-src/pages
-. It provides:
-An upload interface for CSVs and Resumes.
-An interactive configuration dashboard where users can define source priority (e.g., "Prefer Resume for Skills, but Recruiter CSV for Phone Number").
-A results dashboard displaying merged profiles, resolved fields, and highlighted conflicts.
-How to Run the Project
-Follow these steps to set up and run both the backend and frontend services.
+### 1. Dice-Sørensen Similarity Coefficient (DSC)
+The system uses the **Dice-Sørensen similarity coefficient** in two areas:
+*   Comparing the overlap between candidate skills and GitHub repositories.
+*   Performing the **Job Description (JD) match score** calculation. 
 
-Prerequisites
-Python 3.8+ installed.
-Node.js (v18+) and npm installed.
-Step 1: Run the Backend
-Open your terminal and navigate to the Backend directory:
+Compared to Jaccard similarity, the Dice coefficient gives double weight to the size of the intersection, making it ideal for determining keyword overlap when candidates might have larger skill lists:
+$$\text{Dice}(A, B) = \frac{2 \times |A \cap B|}{|A| + |B|}$$
+*   **Implementation:** [`calculate_dice_coefficient(set_a, set_b)`](file:///k:/EightFold%20AI/Backend/matcher.py#L70-L78)
 
-powershell
-cd "Backend"
-Create a Virtual Environment: and run your virtual environment
+### 2. Cosine Similarity (TF-IDF Vector Space Model)
+To match the candidate's resume headline/job title with the recruiter's target title (e.g., "Senior Software Engineer" vs "Software Engineer"), the system implements a **TF-IDF (Term Frequency-Inverse Document Frequency)** vectorizer and computes **Cosine Similarity**:
+*   Term Frequencies ($TF$) are calculated locally.
+*   Smooth Inverse Document Frequency ($IDF$) is calculated using:
+    $$\text{IDF}(t) = \ln\left(\frac{2}{\text{DF}(t)}\right) + 1.0$$
+*   The Cosine Similarity of the TF-IDF weight vectors $\vec{a}$ and $\vec{b}$ is computed as:
+    $$\text{Cosine Similarity} = \frac{\vec{a} \cdot \vec{b}}{\|\vec{a}\| \|\vec{b}\|}$$
+*   **Implementation:** [`calculate_cosine_similarity(text_a, text_b)`](file:///k:/EightFold%20AI/Backend/matcher.py#L81-L127)
 
-env
-GITHUB_TOKEN=your_personal_access_token_here
-Start the FastAPI Server:
+### 3. Shannon Entropy (Information Theory Conflict Detection)
+When consolidating identical candidate profile fields across different data sources (e.g., different locations or names extracted from Recruiter CSV, Resume, and GitHub Profile), the system measures data contradictions using **Shannon Entropy**:
+$$H(X) = - \sum_{i=1}^{n} P(x_i) \log_2 P(x_i)$$
+*Where $P(x_i)$ is the probability of a value $x_i$ appearing across all extracted sources. If all sources agree, the entropy is $0.0$. If there is a complete mismatch, entropy climbs, raising a conflict flag.*
+*   **Implementation:** [`calculate_shannon_entropy(values)`](file:///k:/EightFold%20AI/Backend/matcher.py#L130-L146)
 
-powershell
-python app.py
-The backend will start running on http://localhost:8000.
+### 4. Fuzzy String Matching (Levenshtein Distance Ratios)
+For matching candidate names, email fallback mappings, and repository names, the project leverages `rapidfuzz` (using C-optimized Levenshtein distances):
+*   `fuzz.ratio`: Exact sequence comparison.
+*   `fuzz.partial_ratio`: Matches sub-sequences (useful for finding resume skills inside repository descriptions).
+*   `fuzz.token_set_ratio`: Handles word re-ordering and token intersection (used for matching resume project names to repository names).
 
-Step 2: Run the Frontend
-Open a new terminal in the root directory
+### 5. Harmonic Mean (Harmonic Match Score)
+To ensure balanced evaluation, the system computes the **Harmonic Mean** between the `tech_stack_match_score` (representing skill matches) and `profile_match_score` (representing name/email verification):
+$$\text{Harmonic Match} = \frac{2 \times S_{\text{tech\_stack}} \times S_{\text{profile}}}{S_{\text{tech\_stack}} + S_{\text{profile}}}$$
+*Because the harmonic mean penalizes extreme outliers, a candidate with a $1.0$ profile verification but a $0.0$ skill match will correctly receive a $0.0$ overall harmonic match score, rather than a misleading $0.5$ arithmetic average.*
+*   **Implementation:** [`calculate_harmonic_match(skill_match, experience_match)`](file:///k:/EightFold%20AI/Backend/matcher.py#L149-L153)
 
-npm install
-Start the Vite Development Server:
+### 6. Triangular and Trapezoidal Fuzzy Membership Functions
+To categorize candidate matches into qualitative sets (`Low Match`, `Medium Match`, `High Match`, `Excellent Match`), the score is evaluated using piecewise fuzzy membership equations $\mu(x)$:
+*   **$\mu_{\text{Low}}(x)$**: $1.0$ up to $0.2$, dropping to $0.0$ at $0.45$.
+*   **$\mu_{\text{Medium}}(x)$**: Triangle peaking at $0.5$, active between $0.25$ and $0.75$.
+*   **$\mu_{\text{High}}(x)$**: Triangle peaking at $0.75$, active between $0.55$ and $0.90$.
+*   **$\mu_{\text{Excellent}}(x)$**: Ramps up from $0.0$ at $0.80$ to $1.0$ at $1.0$.
+*   **Implementation:** [`get_fuzzy_rating(score)`](file:///k:/EightFold%20AI/Backend/matcher.py#L156-L188)
 
-npm run dev
-The frontend will start running on http://localhost:5173
+### 7. Weighted Priority Field Resolution
+Resolves conflicts on profile details using configurable source priorities (`SOURCE_WEIGHTS`) and extraction methods (`METHOD_WEIGHTS`):
+*   **`SOURCE_WEIGHTS`**: `recruiter_csv`: 0.9, `resume`: 0.7, `github_csv`: 0.6.
+*   **`METHOD_WEIGHTS`**: `verbatim`: 1.0, `regex`: 0.8, `inferred`: 0.6.
+*   **Corroboration Boost**: If multiple distinct sources agree on a value, its confidence is boosted:
+    $$\text{Confidence} = \min(\text{Source Weight} \times \text{Method Weight} \times 1.15, 1.0)$$
 
+---
+
+## 🧮 Candidate Scoring Engine (GitHub Route vs Fallback)
+
+### Route A: GitHub Profile Present
+When a public GitHub profile matches a candidate, the confidence and match ratings are computed as follows:
+
+1.  **Tech Stack Match Score (`tech_stack_match_score`)**: Filters out CS fundamentals, matches normalized resume skills to GitHub languages (1.0), topics (0.85), repo names (0.75), or descriptions (0.60), and averages them:
+    $$\text{Tech Stack Match Score} = \frac{\sum_{s \in \text{Tech Stack Skills}} \text{Max Match Score}(s)}{|\text{Tech Stack Skills}|}$$
+2.  **Base Score**:
+    $$\text{Base Score} = (0.85 \times \text{Tech Stack Match Score}) + (0.15 \times \text{Profile Match Score})$$
+3.  **Project Match Boost**:
+    If resume projects are verified on GitHub using token ratios, the candidate is rewarded:
+    $$\text{Boost} = \text{Project Match Score} \times 0.10$$
+    $$\text{Overall Score} = \min(\text{Base Score} + \text{Boost}, 1.0)$$
+
+### Route B: GitHub Profile Absent (Fallback Route)
+If no GitHub profile can be found or matched, the candidate is evaluated on profile metadata completeness:
+$$\text{Fallback Confidence} = \min \left( \frac{C_{\text{name}} + C_{\text{loc}} + C_{\text{links}} + \bar{C}_{\text{skills}} + 0.7_{\text{exp}} + 0.7_{\text{edu}}}{1 + I_{\text{loc}} + I_{\text{links}} + I_{\text{skills}} + I_{\text{exp}} + I_{\text{edu}}} + \text{Project Boost}, 1.0 \right)$$
+*Where $C$ represents the resolved field confidence, $I$ is an indicator ($1$ if field is present, $0$ if absent), and Project Boost adds $0.1$ if any project matches.*
+
+---
+
+## 🚀 How to Run the Project
+
+### Prerequisites
+*   **Python 3.10+** (tested on 3.12)
+*   **Node.js v18+** & **npm**
+
+---
+
+### Step 1: Backend Setup & Execution
+
+1.  Navigate to the `Backend` directory:
+    ```bash
+    cd Backend
+    ```
+2.  Create and activate a virtual environment:
+    *   **Windows**:
+        ```powershell
+        python -m venv venv
+        venv\Scripts\activate
+        ```
+    *   **Mac/Linux**:
+        ```bash
+        python3 -m venv venv
+        source venv/bin/activate
+        ```
+3.  Install dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+4.  *(Optional)* Create a `.env` file inside the `Backend` directory and add your GitHub Personal Access Token to avoid API rate limits:
+    ```env
+    GITHUB_TOKEN=your_github_personal_access_token
+    ```
+5.  Start the FastAPI application:
+    ```bash
+    python app.py
+    ```
+    The server will spin up at `http://localhost:8000`.
+
+---
+
+### Step 2: Frontend Setup & Execution
+
+1.  Open a new terminal at the root directory of the project.
+2.  Install npm dependencies:
+    ```bash
+    npm install
+    ```
+3.  Start the Vite React development server:
+    ```bash
+    npm run dev
+    ```
+    The frontend client will open at `http://localhost:5173`.

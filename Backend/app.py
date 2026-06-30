@@ -29,7 +29,8 @@ async def run_pipeline(
     recruiter_csv: UploadFile = File(...),
     github_csv: UploadFile = File(...),
     resumes: List[UploadFile] = File(...),
-    config_json: str = Form(...)
+    config_json: str = Form(...),
+    job_description: str = Form(None)
 ):
     # 1. Parse configuration
     try:
@@ -73,7 +74,7 @@ async def run_pipeline(
             raise HTTPException(status_code=400, detail=f"Error reading GitHub CSV: {e}")
 
         # Initialize and run pipeline
-        pipeline = CandidatePipeline(config)
+        pipeline = CandidatePipeline(config, job_description=job_description)
         pipeline.load_resumes(resumes_dir)
         processed_candidates, _ = pipeline.process(recruiter_df, github_df)
 
