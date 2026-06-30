@@ -75,12 +75,11 @@ async def run_pipeline(
         # Initialize and run pipeline
         pipeline = CandidatePipeline(config)
         pipeline.load_resumes(resumes_dir)
-        processed_candidates, complete_candidates = pipeline.process(recruiter_df, github_df)
+        processed_candidates, _ = pipeline.process(recruiter_df, github_df)
 
         return {
             "status": "success",
             "candidates": processed_candidates,
-            "complete_candidates": complete_candidates,
             "conflicts": pipeline.conflicts
         }
 

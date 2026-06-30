@@ -737,6 +737,8 @@ class CandidatePipeline:
         }
         
         for field in fields_config:
+            if field.get("required") is False:
+                continue
             path = field["path"]
             # Handle basic path resolution
             val = None
@@ -799,10 +801,12 @@ class CandidatePipeline:
             else:
                 projected[path] = val
                 
-        if include_confidence:
-            projected["overall_confidence"] = record["overall_confidence"]
-            projected["provenance"] = record["provenance"]
         if "match_details" in record:
-            projected["match_details"] = record["match_details"]
+            has_skills_or_projects = any(
+                f["path"] in ["skills", "projects"] and f.get("required") is not False 
+                for f in fields_config
+            )
+            if has_skills_or_projects:
+                projected["match_details"] = record["match_details"]
             
         return projected

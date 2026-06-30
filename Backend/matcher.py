@@ -141,11 +141,22 @@ class GithubResumeMatcher:
             "discrete mathematics", "discrete maths",
             "web development", "frontend", "backend", "full stack", "web design",
             "cloud computing", "devops", "testing", "software testing",
-            "machine learning", "deep learning", "artificial intelligence", "ai", "ml", "nlp", "computer vision"
+            "machine learning", "deep learning", "artificial intelligence", "ai", "ml", "nlp", "computer vision",
+            "mongodb", "mysql", "git", "github", "vs code", "vscode", "web technologies", "web technology",
+            "problem-solving", "problem solving", "adaptability", "soft skills", "soft skill", "communication",
+            "time management", "management"
         }
 
-        # Calculate Jaccard Similarity
-        jaccard = self.calculate_jaccard_similarity(resume_skills, github_skills)
+        # Filter out conceptual skills from Jaccard calculation
+        jaccard_resume_skills = {
+            s for s in resume_skills 
+            if not any(kw in s.lower() or fuzz.ratio(s.lower(), kw) >= 85 for kw in fundamental_keywords)
+        }
+        jaccard_github_skills = {
+            s for s in github_skills 
+            if not any(kw in s.lower() or fuzz.ratio(s.lower(), kw) >= 85 for kw in fundamental_keywords)
+        }
+        jaccard = self.calculate_jaccard_similarity(jaccard_resume_skills, jaccard_github_skills)
         
         # 2. Rule-Based Priority & Weighted Heuristic for Tech Stack Match
         skill_details = []
@@ -153,6 +164,10 @@ class GithubResumeMatcher:
         
         if resume_skills:
             for skill in resume_skills:
+                norm_skill = normalize_skill(skill)
+                if not norm_skill:
+                    continue
+                    
                 max_score = 0.0
                 best_source = None
                 best_priority = None
@@ -165,28 +180,28 @@ class GithubResumeMatcher:
                     repo_priority = None
                     
                     # Rule 1: Exact/Fuzzy match in primary language (High Priority)
-                    if repo.language and (skill == normalize_skill(repo.language) or fuzz.ratio(skill, normalize_skill(repo.language)) >= 90):
+                    if repo.language and (norm_skill == normalize_skill(repo.language) or fuzz.ratio(norm_skill, normalize_skill(repo.language)) >= 90):
                         repo_matched = True
                         repo_score = 1.0
                         repo_source = "language"
                         repo_priority = "Priority 1 (High)"
                     
                     # Rule 2: Exact/Fuzzy match in topics (Medium-High Priority)
-                    elif any(skill == normalize_skill(topic) or fuzz.ratio(skill, normalize_skill(topic)) >= 90 for topic in repo.topics):
+                    elif any(norm_skill == normalize_skill(topic) or fuzz.ratio(norm_skill, normalize_skill(topic)) >= 90 for topic in repo.topics):
                         repo_matched = True
                         repo_score = 0.85
                         repo_source = "topic"
                         repo_priority = "Priority 2 (Medium-High)"
                     
                     # Rule 3: Mention in repo name (Medium Priority)
-                    elif skill in repo.name.lower() or fuzz.partial_ratio(skill, repo.name.lower()) >= 85:
+                    elif norm_skill in repo.name.lower() or fuzz.partial_ratio(norm_skill, repo.name.lower()) >= 85:
                         repo_matched = True
                         repo_score = 0.75
                         repo_source = "repo_name"
                         repo_priority = "Priority 3 (Medium)"
                     
                     # Rule 4: Mention in repo description (Low-Medium Priority)
-                    elif repo.description and re.search(r"\b" + re.escape(skill) + r"\b", repo.description.lower()):
+                    elif repo.description and re.search(r"\b" + re.escape(norm_skill) + r"\b", repo.description.lower()):
                         repo_matched = True
                         repo_score = 0.60
                         repo_source = "description"
