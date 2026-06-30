@@ -73,7 +73,7 @@ export default function Sidebar({ collapsed, onToggle }) {
                 lineHeight: 1.2,
                 whiteSpace: 'nowrap',
               }}>
-                <span className="gradient-text">Eightfold</span>
+                <span className="gradient-text">TransformRecruit</span>
               </div>
               <div style={{
                 fontSize: '10px',

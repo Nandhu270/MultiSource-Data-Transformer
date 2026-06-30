@@ -42,7 +42,7 @@ export default function Header() {
           color: 'var(--text-muted)',
           fontWeight: 500,
         }}>
-          Eightfold
+          TransformRecruit
         </span>
         <ChevronRight size={14} color="var(--text-muted)" />
         <span style={{

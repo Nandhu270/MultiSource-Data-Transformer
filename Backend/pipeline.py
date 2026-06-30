@@ -8,6 +8,53 @@ from typing import List, Dict, Any, Tuple
 
 from extractor import extract_text_from_file, extract_name, parse_contact_info, extract_skills, extract_experience_sections, extract_education_sections, extract_location, extract_projects
 from normalizer import normalize_phone, normalize_date, normalize_skill
+GITHUB_USERNAME_REGEX = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$")
+GITHUB_URL_REGEX = re.compile(
+    r"(?:https?://)?(?:www\.)?github\.com/(?P<username>[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?)(?:[/?#].*)?$",
+    re.IGNORECASE,
+)
+
+
+def clean_value(val: Any) -> str:
+    if val is None:
+        return ""
+    if isinstance(val, float) and (val != val or pd.isna(val)):
+        return ""
+    val_str = str(val).strip()
+    if val_str.lower() in ["nan", "none", "null"]:
+        return ""
+    return val_str
+
+def extract_github_username(value: Any) -> str:
+    raw_value = clean_value(value)
+    if not raw_value:
+        return ""
+
+    candidate = raw_value.strip()
+    if candidate.startswith("@"):
+        candidate = candidate[1:]
+
+    if "github.com/" in candidate.lower():
+        match = GITHUB_URL_REGEX.match(candidate)
+        return match.group("username") if match else ""
+
+    candidate = candidate.rstrip("/")
+    return candidate if GITHUB_USERNAME_REGEX.match(candidate) else ""
+
+
+def normalize_github_url(value: Any) -> str:
+    username = extract_github_username(value)
+    return f"https://github.com/{username}" if username else ""
+
+def github_headers() -> Dict[str, str]:
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "Eightfold-Transformer-App"
+    }
+    token = os.environ.get("GITHUB_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
 
 def fetch_github_profile(username: str) -> dict:
     """
@@ -17,14 +64,7 @@ def fetch_github_profile(username: str) -> dict:
     if not username:
         return None
     url = f"https://api.github.com/users/{username}"
-    headers = {
-        "User-Agent": "Eightfold-Transformer-App"
-    }
-    # Read GITHUB_TOKEN from environment variables if present
-    token = os.environ.get("GITHUB_TOKEN")
-    if token:
-        headers["Authorization"] = f"token {token}"
-        
+    headers = github_headers()
     try:
         response = requests.get(url, headers=headers, timeout=4)
         if response.status_code == 200:
@@ -42,6 +82,38 @@ def fetch_github_profile(username: str) -> dict:
         print(f"Error fetching GitHub profile for {username}: {e}")
     return None
 
+# def fetch_github_repos(username: str) -> list:
+#     """
+#     Fetch public GitHub repositories for a user.
+#     Supports GITHUB_TOKEN environment variable to authenticate and increase rate limits.
+#     """
+#     if not username:
+#         return []
+#     url = f"https://api.github.com/users/{username}/repos?sort=updated&per_page=50"
+#     headers = github_headers()
+#     try:
+#         response = requests.get(url, headers=headers, timeout=4)
+#         if response.status_code == 200:
+#             repos = response.json()
+#             return [
+#                 {
+#     "name": r.get("name"),
+#     "description": r.get("description") or "",
+#                     "language": r.get("language"),
+#                     "topics": r.get("topics") or [],
+#                     "html_url": r.get("html_url"),
+#                     "updated_at": r.get("updated_at"),
+#                     "stargazers_count": r.get("stargazers_count", 0)
+#                 }
+#                 for r in repos
+#             ]
+#         else:
+#             print(f"GitHub repos API returned status code {response.status_code} for {username}: {response.text}")
+#     except Exception as e:
+#         print(f"Error fetching GitHub repos for {username}: {e}")
+#     return []
+
+
 def fetch_github_repos(username: str) -> list:
     """
     Fetch public GitHub repositories for a user.
@@ -49,14 +121,10 @@ def fetch_github_repos(username: str) -> list:
     """
     if not username:
         return []
-    url = f"https://api.github.com/users/{username}/repos"
-    headers = {
-        "User-Agent": "Eightfold-Transformer-App"
-    }
-    token = os.environ.get("GITHUB_TOKEN")
-    if token:
-        headers["Authorization"] = f"token {token}"
-        
+
+    url = f"https://api.github.com/users/{username}/repos?sort=updated&per_page=50"
+    headers = github_headers()
+
     try:
         response = requests.get(url, headers=headers, timeout=4)
         if response.status_code == 200:
@@ -64,7 +132,12 @@ def fetch_github_repos(username: str) -> list:
             return [
                 {
                     "name": r.get("name"),
-                    "description": r.get("description") or ""
+                    "description": r.get("description") or "",
+                    "language": r.get("language"),
+                    "topics": r.get("topics") or [],
+                    "html_url": r.get("html_url"),
+                    "updated_at": r.get("updated_at"),
+                    "stargazers_count": r.get("stargazers_count", 0)
                 }
                 for r in repos
             ]
@@ -72,6 +145,7 @@ def fetch_github_repos(username: str) -> list:
             print(f"GitHub repos API returned status code {response.status_code} for {username}: {response.text}")
     except Exception as e:
         print(f"Error fetching GitHub repos for {username}: {e}")
+
     return []
 
 # Default priority and weights
@@ -370,14 +444,10 @@ class CandidatePipeline:
             github_repos = []
             username = None
             if github_url:
-                # Remove query parameters and trailing hashes for robust username extraction
-                clean_url = github_url.split('?')[0].split('#')[0]
-                if "github.com/" in clean_url:
-                    url_parts = clean_url.split("github.com/")[1].split("/")
-                    if url_parts:
-                        username = url_parts[0].strip()
-                
+                username = extract_github_username(github_url)
+
                 if username:
+                    github_url = normalize_github_url(github_url)
                     github_profile_data = fetch_github_profile(username)
                     github_repos = fetch_github_repos(username)
 
@@ -456,19 +526,53 @@ class CandidatePipeline:
                         "sources": ["resume"]
                     }
             # Add GitHub signals (mock languages)
-            if matching_github:
-                github_skills = ["python", "git"]  # default mock skills
-                for s in github_skills:
-                    norm_s = normalize_skill(s)
-                    if norm_s in skills_map:
+            # if matching_github:
+            #     github_skills = ["python", "git"]  # default mock skills
+            #     for s in github_skills:
+            #         norm_s = normalize_skill(s)
+            #         if norm_s in skills_map:
+            #             skills_map[norm_s]["sources"].append("github")
+            #             skills_map[norm_s]["confidence"] = min(skills_map[norm_s]["confidence"] * 1.15, 1.0)
+            #         else:
+            #             skills_map[norm_s] = {
+            #                 "name": norm_s,
+            #                 "confidence": 0.60,
+            #                 "sources": ["github"]
+            #             }
+
+            # Add GitHub signals from repository metadata
+            github_skills = set()
+
+            for repo in github_repos:
+                if repo.get("language"):
+                    github_skills.add(repo["language"])
+
+                for topic in repo.get("topics", []):
+                    github_skills.add(topic)
+
+                repo_text = f"{repo.get('name', '')} {repo.get('description', '')}"
+                for skill in extract_skills(repo_text):
+                    github_skills.add(skill)
+
+            if matching_github and not github_skills:
+                github_skills.add("git")
+
+            for s in github_skills:
+                norm_s = normalize_skill(s)
+                if not norm_s:
+                    continue
+
+                if norm_s in skills_map:
+                    if "github" not in skills_map[norm_s]["sources"]:
                         skills_map[norm_s]["sources"].append("github")
-                        skills_map[norm_s]["confidence"] = min(skills_map[norm_s]["confidence"] * 1.15, 1.0)
-                    else:
-                        skills_map[norm_s] = {
-                            "name": norm_s,
-                            "confidence": 0.60,
-                            "sources": ["github"]
-                        }
+                    skills_map[norm_s]["confidence"] = min(skills_map[norm_s]["confidence"] * 1.15, 1.0)
+                else:
+                    skills_map[norm_s] = {
+                        "name": norm_s,
+                        "confidence": 0.60,
+                        "sources": ["github"]
+                    }
+            
             final_skills = list(skills_map.values())
 
             # Experience & Education (mostly from resume)
