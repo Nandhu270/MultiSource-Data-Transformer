@@ -261,7 +261,7 @@ class CandidatePipeline:
                     }
         return None
 
-    def resolve_field(self, field_name: str, values: Dict[str, Any], candidate_id: str) -> Tuple[Any, str, float]:
+    def resolve_field(self, field_name: str, values: Dict[str, Any], candidate_id: str) -> Tuple[Any, str, float, float]:
         """
         Resolve conflicts among sources based on priority.
         values: { source_name: { value, method } }
@@ -333,11 +333,15 @@ class CandidatePipeline:
                     if str(winner_val).strip().lower() == str(data["value"]).strip().lower():
                         corroborated = True
                         
+        # Calculate Shannon Entropy for the field across valid sources
+        all_vals = [data["value"] for data in valid_sources.values()]
+        entropy = GithubResumeMatcher.calculate_shannon_entropy(all_vals)
+
         confidence = src_weight * mth_weight
         if corroborated:
             confidence = min(confidence * 1.15, 1.0)
             
-        return winner_val, winner_source, round(confidence, 2)
+        return winner_val, winner_source, round(confidence, 2), entropy
 
     def process(self, recruiter_df: pd.DataFrame, github_df: pd.DataFrame) -> List[Dict[str, Any]]:
         """Run the end-to-end merging pipeline."""
@@ -531,9 +535,13 @@ class CandidatePipeline:
                 }
 
             # Resolve values
-            final_name, name_src, name_conf = self.resolve_field("full_name", name_vals, candidate_id)
-            final_location, loc_src, loc_conf = self.resolve_field("location", location_vals, candidate_id)
-            final_links, links_src, links_conf = self.resolve_field("links", links_vals, candidate_id)
+            final_name, name_src, name_conf, name_entropy = self.resolve_field("full_name", name_vals, candidate_id)
+            final_location, loc_src, loc_conf, loc_entropy = self.resolve_field("location", location_vals, candidate_id)
+            final_links, links_src, links_conf, links_entropy = self.resolve_field("links", links_vals, candidate_id)
+            
+            # Calculate profile-wide average Shannon Entropy
+            entropies = [name_entropy, loc_entropy, links_entropy]
+            profile_entropy = round(sum(entropies) / len(entropies), 4)
             
             # Assemble Skills (merged list with highest confidence)
             skills_map = {}
@@ -649,8 +657,12 @@ class CandidatePipeline:
                     repos=repo_list
                 )
                 
+                # Determine job title from Recruiter CSV if available
+                title_col = next((c for c in recruiter_df.columns if "title" in c.lower() or "role" in c.lower()), None)
+                csv_title = clean_val(row[title_col]) if title_col else "Software Engineer"
+
                 matcher = GithubResumeMatcher()
-                match_report = matcher.match(resume_data, github_data)
+                match_report = matcher.match(resume_data, github_data, csv_title=csv_title)
                 match_details_dict = match_report.model_dump()
                 overall_conf = match_report.overall_score
             
@@ -670,6 +682,12 @@ class CandidatePipeline:
                 "github_profile": github_profile_data,
                 "github_repos": github_repos,
                 "match_details": match_details_dict,
+                "profile_entropy": profile_entropy,
+                "field_entropies": {
+                    "full_name": name_entropy,
+                    "location": loc_entropy,
+                    "links": links_entropy
+                },
                 "provenance": [
                     {"field": "full_name", "source": name_src, "method": "verbatim" if name_src == "recruiter_csv" else "regex"},
                     {"field": "emails", "source": "recruiter_csv", "method": "verbatim"},
@@ -808,5 +826,10 @@ class CandidatePipeline:
             )
             if has_skills_or_projects:
                 projected["match_details"] = record["match_details"]
+                
+        if "profile_entropy" in record:
+            projected["profile_entropy"] = record["profile_entropy"]
+        if "field_entropies" in record:
+            projected["field_entropies"] = record["field_entropies"]
             
         return projected

@@ -10,6 +10,7 @@ class ResumeData(BaseModel):
     skills: List[str] = Field(default_factory=list, description="Skills listed on the resume")
     projects: List[str] = Field(default_factory=list, description="Projects listed on the resume")
     text: str = Field("", description="Raw text of the resume")
+    title: Optional[str] = Field(None, description="Candidate job title or headline from resume")
 
 class GitHubRepoData(BaseModel):
     name: str = Field(..., description="Repository name")
@@ -42,10 +43,13 @@ class ProjectMatchDetail(BaseModel):
 
 class MatchReport(BaseModel):
     jaccard_similarity: float = Field(..., description="Jaccard similarity between resume skills and GitHub skills")
+    dice_similarity: float = Field(0.0, description="Dice-Sørensen coefficient between resume skills and GitHub skills")
     tech_stack_match_score: float = Field(..., description="Weighted match score of resume skills on GitHub (75% weight)")
     project_name_match_score: float = Field(..., description="Fuzzy match score of resume projects to GitHub repos")
     profile_match_score: float = Field(..., description="Name and email match score between resume and GitHub profile")
+    semantic_title_match: float = Field(0.0, description="Cosine similarity (TF-IDF) between resume title and target job title")
     overall_score: float = Field(..., description="Final weighted sum score")
+    harmonic_match_score: float = Field(0.0, description="Harmonic Mean (F1-Score) between skill match and profile/experience match")
     fuzzy_rating: str = Field(..., description="Fuzzy logic rating: Low, Medium, High, Excellent")
     skill_matches: List[SkillMatchDetail] = Field(default_factory=list)
     project_matches: List[ProjectMatchDetail] = Field(default_factory=list)
@@ -61,6 +65,92 @@ class GithubResumeMatcher:
         if not union:
             return 0.0
         return round(len(intersection) / len(union), 4)
+
+    @staticmethod
+    def calculate_dice_coefficient(set_a: set, set_b: set) -> float:
+        """Calculate Dice-Sørensen Coefficient between two sets."""
+        if not set_a and not set_b:
+            return 0.0
+        intersection = set_a & set_b
+        total_elements = len(set_a) + len(set_b)
+        if total_elements == 0:
+            return 0.0
+        return round((2.0 * len(intersection)) / total_elements, 4)
+
+    @staticmethod
+    def calculate_cosine_similarity(text_a: str, text_b: str) -> float:
+        """Calculate Cosine Similarity using TF-IDF representation for job titles."""
+        if not text_a or not text_b:
+            return 0.0
+        
+        # Simple word tokenization
+        words_a = [w for w in re.findall(r'\w+', text_a.lower()) if w]
+        words_b = [w for w in re.findall(r'\w+', text_b.lower()) if w]
+        
+        if not words_a or not words_b:
+            return 0.0
+            
+        # Vocabulary
+        vocab = set(words_a + words_b)
+        
+        # Term Frequencies
+        tf_a = {word: words_a.count(word) for word in vocab}
+        tf_b = {word: words_b.count(word) for word in vocab}
+        
+        # Document Frequencies (only two documents in our corpus)
+        df = {}
+        for word in vocab:
+            count = 0
+            if word in words_a:
+                count += 1
+            if word in words_b:
+                count += 1
+            df[word] = count
+            
+        import math
+        vector_a = []
+        vector_b = []
+        for word in vocab:
+            # IDF = log(Total Docs / DF) + 1.0 (smooth idf)
+            idf = math.log(2.0 / df[word]) + 1.0
+            vector_a.append(tf_a[word] * idf)
+            vector_b.append(tf_b[word] * idf)
+            
+        # Compute Cosine
+        dot_product = sum(a * b for a, b in zip(vector_a, vector_b))
+        mag_a = math.sqrt(sum(a * a for a in vector_a))
+        mag_b = math.sqrt(sum(b * b for b in vector_b))
+        
+        if mag_a == 0.0 or mag_b == 0.0:
+            return 0.0
+            
+        return round(dot_product / (mag_a * mag_b), 4)
+
+    @staticmethod
+    def calculate_shannon_entropy(values: List[Any]) -> float:
+        """Calculate Shannon Entropy for a list of values to measure disagreement/conflict."""
+        # Filter out empty/None values
+        valid_vals = [str(v).strip().lower() for v in values if v is not None and str(v).strip() != ""]
+        if not valid_vals:
+            return 0.0
+        import math
+        total = len(valid_vals)
+        counts = {}
+        for val in valid_vals:
+            counts[val] = counts.get(val, 0) + 1
+        
+        entropy = 0.0
+        for count in counts.values():
+            p = count / total
+            entropy -= p * math.log2(p)
+        return round(entropy, 4)
+
+    @staticmethod
+    def calculate_harmonic_match(skill_match: float, experience_match: float) -> float:
+        """Calculate the Harmonic Mean (F1-Score) between skill match and experience/profile match."""
+        if (skill_match + experience_match) == 0.0:
+            return 0.0
+        return round((2.0 * skill_match * experience_match) / (skill_match + experience_match), 4)
 
     @staticmethod
     def get_fuzzy_rating(score: float) -> str:
@@ -96,7 +186,7 @@ class GithubResumeMatcher:
         # Return the key with the highest membership value
         return max(ratings, key=ratings.get)
 
-    def match(self, resume: ResumeData, github: GitHubData) -> MatchReport:
+    def match(self, resume: ResumeData, github: GitHubData, csv_title: str = "Software Engineer") -> MatchReport:
         # 1. Set Union & Normalization
         resume_skills = {normalize_skill(s) for s in resume.skills if normalize_skill(s)}
         
@@ -157,6 +247,7 @@ class GithubResumeMatcher:
             if not any(kw in s.lower() or fuzz.ratio(s.lower(), kw) >= 85 for kw in fundamental_keywords)
         }
         jaccard = self.calculate_jaccard_similarity(jaccard_resume_skills, jaccard_github_skills)
+        dice = self.calculate_dice_coefficient(jaccard_resume_skills, jaccard_github_skills)
         
         # 2. Rule-Based Priority & Weighted Heuristic for Tech Stack Match
         skill_details = []
@@ -289,6 +380,13 @@ class GithubResumeMatcher:
             
         profile_match_score = 0.5 * profile_name_sim + 0.5 * email_matched
         
+        # Calculate Cosine Similarity (TF-IDF) between resume title and csv_title
+        resume_title = resume.title or ""
+        semantic_title_match = self.calculate_cosine_similarity(resume_title, csv_title)
+        
+        # Calculate Harmonic Match between tech_stack_match_score (Skill Match) and profile_match_score (Profile Match)
+        harmonic_match_score = self.calculate_harmonic_match(tech_stack_match_score, profile_match_score)
+        
         # 5. Weight Sum (75% on Tech Stack Match, 25% on others)
         # If there are no projects, adjust weights dynamically so we don't penalize candidates
         if resume.projects:
@@ -314,10 +412,13 @@ class GithubResumeMatcher:
         
         return MatchReport(
             jaccard_similarity=jaccard,
+            dice_similarity=dice,
             tech_stack_match_score=tech_stack_match_score,
             project_name_match_score=project_name_match_score,
             profile_match_score=profile_match_score,
+            semantic_title_match=semantic_title_match,
             overall_score=overall_score,
+            harmonic_match_score=harmonic_match_score,
             fuzzy_rating=fuzzy_rating,
             skill_matches=skill_details,
             project_matches=project_details

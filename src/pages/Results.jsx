@@ -503,6 +503,71 @@ export default function Results() {
                     </div>
                   </div>
 
+                  {/* Scientific Ratios Section */}
+                  <div style={{
+                    borderTop: '1px dashed var(--border-subtle)',
+                    paddingTop: 'var(--space-4)',
+                    marginTop: 'var(--space-4)',
+                    marginBottom: 'var(--space-5)'
+                  }}>
+                    <div style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 'var(--space-3)' }}>
+                      Rigorous Scientific Ratios
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+                      {/* Dice-Sørensen */}
+                      <div style={{ background: 'rgba(236, 72, 153, 0.03)', border: '1px solid rgba(236, 72, 153, 0.08)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: '4px' }}>Dice-Sørensen (Skill Match)</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                          <div style={{ flex: 1, height: '6px', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                            <div style={{ width: `${((unwrap(completeCandidate.match_details).dice_similarity || 0) * 100).toFixed(0)}%`, height: '100%', background: '#ec4899' }} />
+                          </div>
+                          <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+                            {((unwrap(completeCandidate.match_details).dice_similarity || 0) * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Cosine Title Match */}
+                      <div style={{ background: 'rgba(249, 115, 22, 0.03)', border: '1px solid rgba(249, 115, 22, 0.08)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: '4px' }}>Semantic Title Match (Cosine TF-IDF)</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                          <div style={{ flex: 1, height: '6px', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                            <div style={{ width: `${((unwrap(completeCandidate.match_details).semantic_title_match || 0) * 100).toFixed(0)}%`, height: '100%', background: '#f97316' }} />
+                          </div>
+                          <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+                            {((unwrap(completeCandidate.match_details).semantic_title_match || 0) * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Harmonic Mean (F1 Match) */}
+                      <div style={{ background: 'rgba(99, 102, 241, 0.03)', border: '1px solid rgba(99, 102, 241, 0.08)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: '4px' }}>Harmonic Match (F1-Score)</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                          <div style={{ flex: 1, height: '6px', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                            <div style={{ width: `${((unwrap(completeCandidate.match_details).harmonic_match_score || 0) * 100).toFixed(0)}%`, height: '100%', background: '#6366f1' }} />
+                          </div>
+                          <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+                            {((unwrap(completeCandidate.match_details).harmonic_match_score || 0) * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Shannon Entropy */}
+                      <div style={{ background: 'rgba(239, 68, 68, 0.03)', border: '1px solid rgba(239, 68, 68, 0.08)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: '4px' }}>Shannon Entropy (Conflict Ratio)</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                          <div style={{ flex: 1, height: '6px', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                            <div style={{ width: `${Math.min(100, ((completeCandidate.profile_entropy || 0) / 1.58) * 100).toFixed(0)}%`, height: '100%', background: '#ef4444' }} />
+                          </div>
+                          <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+                            {completeCandidate.profile_entropy !== undefined ? completeCandidate.profile_entropy.toFixed(3) : '0.000'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Skill Matches Breakdown */}
                   <div style={{ marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                     {/* Tech Stack Skills */}
