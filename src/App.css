@@ -1,0 +1,27 @@
+/* App-specific overrides — kept minimal since index.css has the design system */
+
+/* Ensure select dropdown styling */
+select option {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+/* Table row hover for pipeline runs */
+table tbody tr {
+  transition: background 0.15s ease;
+}
+
+/* Drag handle cursor */
+[data-drag-handle] {
+  cursor: grab;
+}
+[data-drag-handle]:active {
+  cursor: grabbing;
+}
+
+/* Responsive grid adjustments */
+@media (max-width: 900px) {
+  .results-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
