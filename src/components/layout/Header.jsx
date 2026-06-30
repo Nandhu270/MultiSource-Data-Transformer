@@ -1,11 +1,11 @@
-import { useLocation } from 'react-router-dom';
+import { useLocation, NavLink } from 'react-router-dom';
 import { ChevronRight, Activity } from 'lucide-react';
 import { usePipeline } from '../../context/PipelineContext';
 
 const pageNames = {
-  '/': 'Upload Sources',
+  '/': 'Configuration',
+  '/upload': 'Upload Sources',
   '/results': 'Pipeline Results',
-  '/config': 'Configuration',
 };
 
 export default function Header() {
@@ -17,9 +17,8 @@ export default function Header() {
     <header style={{
       position: 'fixed',
       top: 0,
-      right: 0,
-      left: 'inherit',
-      width: 'calc(100% - var(--sidebar-width))',
+      left: 0,
+      width: '100%',
       height: 'var(--header-height)',
       background: 'rgba(6, 6, 15, 0.8)',
       backdropFilter: 'blur(16px)',
@@ -29,7 +28,6 @@ export default function Header() {
       justifyContent: 'space-between',
       padding: '0 var(--space-8)',
       zIndex: 50,
-      transition: 'width 0.25s ease',
     }}>
       {/* Breadcrumb */}
       <div style={{
@@ -52,6 +50,60 @@ export default function Header() {
         }}>
           {pageName}
         </span>
+      </div>
+
+      {/* Navigation Tabs */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 'var(--space-1)',
+        background: 'rgba(255, 255, 255, 0.02)',
+        padding: '3px',
+        borderRadius: 'var(--radius-md)',
+        border: '1px solid var(--border-subtle)',
+      }}>
+        {[
+          { path: '/', label: '1. Configuration' },
+          { path: '/upload', label: '2. Upload Sources' },
+          { path: '/results', label: '3. Results' },
+        ].map(tab => {
+          const isActive = location.pathname === tab.path;
+          
+          let isEnabled = true;
+          if (tab.path === '/upload') {
+            isEnabled = state.configSaved || location.pathname === '/upload' || state.pipeline.status === 'completed';
+          } else if (tab.path === '/results') {
+            isEnabled = state.pipeline.status === 'completed';
+          }
+
+          return (
+            <NavLink
+              key={tab.path}
+              to={isEnabled ? tab.path : '#'}
+              onClick={(e) => {
+                if (!isEnabled) {
+                  e.preventDefault();
+                }
+              }}
+              style={{
+                fontSize: 'var(--text-xs)',
+                fontWeight: 600,
+                color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                background: isActive ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
+                border: '1px solid ' + (isActive ? 'rgba(139, 92, 246, 0.2)' : 'transparent'),
+                padding: '5px 14px',
+                borderRadius: 'var(--radius-sm)',
+                textDecoration: 'none',
+                transition: 'all 0.2s ease',
+                opacity: isEnabled ? 1 : 0.4,
+                cursor: isEnabled ? 'pointer' : 'not-allowed',
+                pointerEvents: isEnabled ? 'auto' : 'none',
+              }}
+            >
+              {tab.label}
+            </NavLink>
+          );
+        })}
       </div>
 
       {/* Right side */}

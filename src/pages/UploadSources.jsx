@@ -1,10 +1,11 @@
-import { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
-  FileSpreadsheet, FileText, Play, FolderOpen,
-  ArrowRight, Loader2, CheckCircle2, Upload,
-  File, X, FolderUp, Link2
+  Upload, FileText, CheckCircle2, AlertCircle,
+  FolderOpen, FolderUp, Link2, X, Play, ArrowRight,
+  Loader2, Cpu, Database, GitBranch, Activity, Settings,
+  FileSpreadsheet, File
 } from 'lucide-react';
 import { usePipeline } from '../context/PipelineContext';
 import { pipelineStages } from '../data/mockData';
@@ -17,6 +18,8 @@ export default function UploadSources() {
   const folderInputRef = useRef(null);
   const recruiterCsvRef = useRef(null);
   const githubCsvRef = useRef(null);
+
+  const [pipelineResult, setPipelineResult] = useState(null);
 
   // ─── 1. Resume Folder Upload ─────────────────────────────────────────
   const handleFolderUpload = (e) => {
@@ -59,6 +62,7 @@ export default function UploadSources() {
 
   const handleRunPipeline = async () => {
     dispatch({ type: 'START_PIPELINE' });
+    setPipelineResult(null);
     const startTime = Date.now();
 
     try {
@@ -95,17 +99,14 @@ export default function UploadSources() {
       const result = await response.json();
       const duration = ((Date.now() - startTime) / 1000).toFixed(1);
 
-      dispatch({
-        type: 'COMPLETE_PIPELINE_LIVE',
-        payload: {
-          candidates: result.candidates,
-          completeCandidates: result.complete_candidates,
-          conflicts: result.conflicts,
-          duration
-        }
+      // Store result locally to trigger the success animation on the loading screen
+      setPipelineResult({
+        candidates: result.candidates,
+        completeCandidates: result.complete_candidates,
+        conflicts: result.conflicts,
+        duration
       });
 
-      navigate('/results');
     } catch (err) {
       dispatch({ type: 'RESET_PIPELINE' });
       alert(`Error running pipeline: ${err.message}`);
@@ -123,6 +124,23 @@ export default function UploadSources() {
     sources.githubCsv.status === 'uploaded',
     sources.resumeFolder.status === 'uploaded',
   ].filter(Boolean).length;
+
+  if (state.pipeline.status === 'running') {
+    return (
+      <PipelineProcessing 
+        sources={sources} 
+        pipelineResult={pipelineResult}
+        onAnimationComplete={(payload) => {
+          dispatch({
+            type: 'COMPLETE_PIPELINE_LIVE',
+            payload
+          });
+          navigate('/results');
+          setPipelineResult(null);
+        }}
+      />
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
@@ -279,6 +297,120 @@ export default function UploadSources() {
           )}
         </button>
       </motion.div>
+    </div>
+  );
+}
+
+// ─── Simple Pipeline Processing View ──────────────────────────────────────────
+
+const stages = [
+  { title: 'Initializing Data', desc: 'Reading recruiter and GitHub CSV files...' },
+  { title: 'Loading Resumes', desc: 'Loading candidate resumes from folder...' },
+  { title: 'Extracting Skills', desc: 'Extracting skills and timelines using LLM parser...' },
+  { title: 'Fetching GitHub Data', desc: 'Scanning and downloading repository statistics...' },
+  { title: 'Aligning Profiles', desc: 'Running fuzzy match and resolving merge conflicts...' },
+  { title: 'Calculating Scores', desc: 'Computing Jaccard similarity and tech weights...' },
+  { title: 'Projecting Schema', desc: 'Formatting output profiles to your custom configuration...' },
+];
+
+function PipelineProcessing({ sources, pipelineResult, onAnimationComplete }) {
+  const [progress, setProgress] = useState(0);
+
+  // Derive stage index from progress percentage
+  const stageIndex = Math.min(6, Math.floor((progress / 100) * 7));
+  const currentStage = stages[stageIndex];
+
+  // Progress Bar Loop
+  useEffect(() => {
+    let animId;
+    const updateProgress = () => {
+      setProgress((prev) => {
+        if (pipelineResult) {
+          // If backend has completed, accelerate to 100%
+          if (prev >= 100) {
+            cancelAnimationFrame(animId);
+            return 100;
+          }
+          return Math.min(100, prev + 3);
+        } else {
+          // Asymptotic rise towards 95%
+          if (prev >= 95) {
+            return 95;
+          }
+          return prev + (95 - prev) * 0.02;
+        }
+      });
+      animId = requestAnimationFrame(updateProgress);
+    };
+    animId = requestAnimationFrame(updateProgress);
+    return () => cancelAnimationFrame(animId);
+  }, [pipelineResult]);
+
+  // Trigger completion callback when progress hits 100
+  useEffect(() => {
+    if (progress >= 100 && pipelineResult) {
+      const timeout = setTimeout(() => {
+        onAnimationComplete(pipelineResult);
+      }, 800);
+      return () => clearTimeout(timeout);
+    }
+  }, [progress, pipelineResult, onAnimationComplete]);
+
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '60vh',
+      gap: 'var(--space-6)',
+      textAlign: 'center',
+    }}>
+      {/* Centered minimalist card */}
+      <div className="glass-card-static" style={{
+        width: '100%',
+        maxWidth: '400px',
+        padding: 'var(--space-8)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 'var(--space-5)',
+      }}>
+        {/* Simple elegant spinner */}
+        <div style={{
+          width: '56px',
+          height: '56px',
+          borderRadius: '50%',
+          border: '3px solid rgba(139, 92, 246, 0.1)',
+          borderTopColor: 'var(--accent-purple)',
+          animation: 'spin 1s linear infinite',
+        }} />
+
+        {/* Status text */}
+        <div>
+          <h2 style={{ fontSize: 'var(--text-base)', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
+            {progress >= 100 ? 'Processing Complete' : 'Processing Profiles...'}
+          </h2>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+            {progress >= 100 ? 'Redirecting to results...' : `Stage ${stageIndex + 1}/7: ${currentStage.title}`}
+          </p>
+        </div>
+
+        {/* Simple Progress Bar */}
+        <div style={{ width: '100%' }}>
+          <div style={{ width: '100%', height: '4px', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '2px', overflow: 'hidden', marginBottom: '6px' }}>
+            <div style={{
+              width: `${progress}%`,
+              height: '100%',
+              background: 'var(--gradient-primary)',
+              transition: 'width 0.1s ease-out',
+            }} />
+          </div>
+          <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+            {Math.round(progress)}%
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -122,7 +122,8 @@ const initialState = {
   },
   // Config
   activeConfig: 'full',
-  customConfig: configPresets.full.config
+  customConfig: configPresets.full.config,
+  configSaved: false
 };
 
 function pipelineReducer(state, action) {
@@ -159,7 +160,8 @@ function pipelineReducer(state, action) {
     case 'SAVE_CUSTOM_CONFIG':
       return {
         ...state,
-        customConfig: action.payload
+        customConfig: action.payload,
+        configSaved: true
       };
     case 'CLEAR_SOURCE':
       if (action.payload === 'resumeFolder') {
